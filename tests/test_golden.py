@@ -6,7 +6,8 @@ import sqlite3
 from collections import Counter
 
 from quizz import golden
-from quizz.asof import HOLDOUT_FROM, Answer, answer_as_of, period_key
+from quizz.asof import Answer, answer_as_of
+from quizz.barrier import is_held_out
 from quizz.scoring import truth
 
 
@@ -48,7 +49,7 @@ def test_every_refusal_question_names_the_rule_it_exercises(db: sqlite3.Connecti
 def test_no_answerable_question_is_inside_the_holdout(db: sqlite3.Connection) -> None:
     for question in golden.build(db):
         if question.expected != "refused":
-            assert period_key(question.observation) < period_key(HOLDOUT_FROM), question.id
+            assert not is_held_out(question.observation), question.id
 
 
 def test_most_answerable_questions_would_be_got_wrong_by_looking_the_number_up(

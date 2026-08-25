@@ -20,13 +20,12 @@ import psycopg
 import pytest
 
 from quizz import corpus, golden, notes, retrieval
-from quizz.asof import HOLDOUT_FROM
-from quizz.notes import period_rank
+from quizz.barrier import earliest_held_out_rank
 
 pytestmark = pytest.mark.services
 
 DSN = os.environ.get("QUIZZ_POSTGRES_URL", "postgresql://quizz:quizz@127.0.0.1:5433/quizz")
-HOLDOUT_RANK = period_rank(HOLDOUT_FROM)
+HOLDOUT_RANK = earliest_held_out_rank()
 
 
 @pytest.fixture(scope="module")
@@ -185,3 +184,30 @@ def test_the_two_mechanisms_are_not_redundant(
     # The policy is present in both plans. Under row level security the predicate is always
     # applied, so "no filter line at all" is true of the owner's query and not of this one.
     assert loose.has_filter and tight.has_filter
+
+
+def test_the_retrieval_role_cannot_read_the_holdout_definition(
+    as_retriever: psycopg.Connection[tuple[object, ...]],
+) -> None:
+    """The role-scoped grant, checked from the wrong side of it.
+
+    A role that can read where the boundary is can compute it exactly, and a barrier a caller
+    can measure is one it can work around. Both tables are refused, and the refusal comes from
+    the database rather than from anything this repository remembered to write.
+    """
+    for table in ("holdout_window", "promotion"):
+        with as_retriever.cursor() as cursor:
+            with pytest.raises(psycopg.errors.InsufficientPrivilege):
+                cursor.execute(f"select count(*) from {table}")
+            as_retriever.rollback()
+
+
+def test_the_owner_can_read_the_holdout_definition(
+    loaded: psycopg.Connection[tuple[object, ...]],
+) -> None:
+    """Otherwise the test above would pass just as well against tables that do not exist."""
+    with loaded.cursor() as cursor:
+        cursor.execute("select count(*) from holdout_window")
+        row = cursor.fetchone()
+        assert row is not None
+        assert int(str(row[0])) >= 1
