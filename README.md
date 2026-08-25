@@ -254,6 +254,20 @@ somebody else's API. An in-flight row commits before the call, so a crash after 
 evidence, and a resume that finds one stops and names the step instead of repeating it. Repeating
 it is how a budget with a cap silently becomes twice the cap.
 
+## What was decided, and what was rejected
+
+Six records under [`docs/adr/`](docs/adr/), written because an absence is harder to review than
+an addition: nothing in a diff points at the thing that is not there.
+
+| | |
+|---|---|
+| [0001](docs/adr/0001-where-the-vintages-come-from.md) | why the obvious archive is ruled out by its own terms, and the endpoint that silently ignored a vintage parameter |
+| [0002](docs/adr/0002-the-shape-of-a-refusal.md) | one message for six rules, and the earlier draft that avoided leaking by saying something false |
+| [0003](docs/adr/0003-arguments-are-refused-on-their-name.md) | why a denylist of forbidden values is a list of the attacks somebody thought of |
+| [0004](docs/adr/0004-two-mechanisms-for-one-barrier.md) | four constructions measured, and the three that fail the claim |
+| [0005](docs/adr/0005-what-is-absent-and-why.md) | five things absent on purpose, including a live pipeline job |
+| [0006](docs/adr/0006-an-exact-trial-correction.md) | why this null needs no Gumbel approximation, with the error that decided it |
+
 ## Limitations
 
 **The score measures the harness and the prompt more than the model.** Stated above and repeated
