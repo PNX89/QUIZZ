@@ -319,6 +319,23 @@ pgvector behind them, because a skipped test reports as a pass and nobody reads 
 `CONTRIBUTING.md` carries the rest, including why the evidence under `docs/evidence/` is
 committed rather than left in a log.
 
+<!-- toolset:start -->
+
+Part of the Q...Z toolset, all of it designing for the failure that does not announce itself:
+
+- [QUACKZ](https://github.com/PNX89/QUACKZ), deflating a backtest that only looks good because
+  it was picked out of two hundred.
+- [QUOTEZ](https://github.com/PNX89/QUOTEZ), market data an agent can read and cannot act on.
+- [QUELLZ](https://github.com/PNX89/QUELLZ), measuring what prompt-injection containment costs
+  in utility as well as in attack rate.
+- [QUIDZ](https://github.com/PNX89/QUIDZ), refusing the outbound payment that would have gone
+  out twice.
+- [QUESTZ](https://github.com/PNX89/QUESTZ), stopping a scraper before it writes a CSV from a
+  page that changed shape.
+- QUIZZ, this one: answering what a statistic said at the time, and refusing when it cannot.
+
+<!-- toolset:end -->
+
 ## Licence
 
 MIT. See [LICENSE](LICENSE).
