@@ -27,6 +27,7 @@ uv run ruff check .
 uv run ruff format --check .
 uv run mypy
 uv run pytest -q
+uv run pytest -m services -q
 ```
 
 Run every one of them. Running only the test suite is the most common way to be surprised by a
