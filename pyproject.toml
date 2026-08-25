@@ -46,6 +46,10 @@ dev = [
     "mypy>=1.11",
     "pyyaml>=6",
     "types-PyYAML>=6",
+    # Only the services suite imports this. It is in `dev` rather than its own group so that
+    # the type checker sees the same tree everywhere: a module CI cannot import is a module CI
+    # cannot check.
+    "psycopg[binary]>=3.2",
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -53,7 +57,13 @@ packages = ["src/quizz"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-q"
+# The services suite is DESELECTED here rather than skipped. A skipped test reports as a pass
+# and nobody looks; a deselected marker is visibly absent from the count, and the containers job
+# in ci.yml runs exactly this marker with a real pgvector service behind it.
+addopts = "-q -m 'not services'"
+markers = [
+    "services: needs the containers compose.yaml brings up. Run with -m services.",
+]
 filterwarnings = ["error"]
 
 [tool.ruff]
