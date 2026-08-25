@@ -1,0 +1,64 @@
+[project]
+name = "quizz"
+version = "0.1.0"
+description = "An as-of question answering agent, scored on right answers and on correct refusals."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Quelin Zammit" }]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Financial and Insurance Industry",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Typing :: Typed",
+]
+
+# Empty on purpose at the scaffold, and it is a decision rather than an omission. A
+# dependency arrives in the commit that first imports it, so the history shows what each
+# one was bought for. The services this repository talks to run in containers and are
+# described in compose.yaml; talking to them needs client libraries, and those land with
+# the code that talks.
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/PNX89/QUIZZ"
+Source = "https://github.com/PNX89/QUIZZ"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+# PyYAML is a test dependency and only a test dependency. tests/test_services.py reads
+# compose.yaml and compares it against the defaults in src/quizz/services.py, and parsing
+# YAML with a regular expression is how the portfolio's map generator once read the word
+# "error" out of a prose comment.
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "ruff>=0.6",
+    "mypy>=1.11",
+    "pyyaml>=6",
+    "types-PyYAML>=6",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/quizz"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+filterwarnings = ["error"]
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF"]
+
+[tool.mypy]
+files = ["src", "tests"]
+strict = true

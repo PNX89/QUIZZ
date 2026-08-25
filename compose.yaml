@@ -1,0 +1,50 @@
+# The two services this repository needs, so that nothing is installed on the host and a
+# reader who clones it gets the same versions rather than whatever their package manager
+# last shipped. One command, and the local story and the continuous integration story stay
+# the same story.
+#
+#   docker compose up -d        bring both up
+#   docker compose down -v      take both down and discard the data
+#
+# BOTH PORTS ARE ONE ABOVE THE DEFAULT, and that is measured rather than fussy. The machine
+# this was written on already runs PostgreSQL 17 on 127.0.0.1:5432. A compose file
+# publishing 5432 would either refuse to bind or, far worse, appear to work while every
+# test talked to a database nobody meant to touch. Publishing one above the default means
+# cloning this cannot collide with a service the reader already runs.
+#
+# BOTH ARE BOUND TO THE LOOPBACK INTERFACE. Compose publishes on every interface by
+# default, so a laptop on a shared network would be offering an unauthenticated Redis and a
+# weakly credentialled Postgres to it. The 127.0.0.1 prefix is the whole fix and costs
+# nothing, since nothing outside this machine has any business reaching either one.
+#
+# NO NAMED VOLUMES, ALSO ON PURPOSE. Every row either belongs to the committed golden set
+# or is rebuilt from it, so durable state here would only ever be state that had drifted
+# from the file that defines it. `down -v` and `up -d` is the reset.
+
+services:
+  redis:
+    image: redis:8-alpine
+    ports:
+      - "127.0.0.1:6380:6379"
+    # A token bucket is not durable state. Saving it to disk would only preserve a rate
+    # limit window that has already expired by the time anything reads it back.
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  postgres:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_USER: quizz
+      POSTGRES_PASSWORD: quizz
+      POSTGRES_DB: quizz
+    ports:
+      - "127.0.0.1:5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U quizz -d quizz"]
+      interval: 3s
+      timeout: 3s
+      retries: 10

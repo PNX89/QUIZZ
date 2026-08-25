@@ -1,0 +1,27 @@
+name: CI
+
+# Nothing here reaches the network and nothing here needs a key. The two services in
+# compose.yaml are for local work; no test in this job talks to either one, because a test
+# that quietly requires a container is a test that fails for a stranger and passes here.
+#
+# The shared legs, lint, format, types and the suite, live in PNX89/.github and are pinned
+# to a tag rather than a branch, so a commit in that repository cannot turn this badge red.
+# What the pipeline is for, and the five things it deliberately does not gate, is argued at
+# https://github.com/PNX89/.github/blob/main/docs/adr/0001-what-ci-is-for.md
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: lint, types and the suite
+    uses: PNX89/.github/.github/workflows/checks.yml@v1
+    with:
+      python-versions: '["3.11", "3.12", "3.13"]'
+      sync-args: "--dev"
+      run-mypy: true
