@@ -1,52 +1,293 @@
 # QUIZZ
 
-**Being built in the open. The README is written last, from captured output, so this page is
-short on purpose and will be replaced rather than extended.**
+**Prices get revised. An agent that answers a question about a revisable number is only
+trustworthy if it refuses the questions it cannot answer honestly, and this measures both halves.**
 
 [![CI](https://github.com/PNX89/QUIZZ/actions/workflows/ci.yml/badge.svg)](https://github.com/PNX89/QUIZZ/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-blue)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-## What it sets out to argue
+![A real run: one question about real output asked at five moments, answered three different
+ways and then refused twice in the same words.](docs/demo.svg)
 
-An agent that answers a question about a revisable number is only trustworthy if it refuses
-the questions it cannot answer honestly. This one is scored on both halves: whether the
-answer is right at the stated knowing-time, and whether the refusal happens when it should.
+One file to start with: [`src/quizz/asof.py`](src/quizz/asof.py). It is the oracle every score
+here is measured against, and it carries the argument about what a refusal is allowed to say.
 
-That is a claim, and claims here are meant to be checkable. Nothing on this page is evidence
-for it yet.
+```text
+>>> ask("Real GNP/GDP for 2024-Q2", as_of="2024-08")
+{"answer": 22918.7, "vintage": "2024-08", "revised_since": true}
 
-## What is here today
+>>> ask("Real GNP/GDP for 2024-Q2", as_of="2024-10")
+{"answer": 23223.9, "vintage": "2024-10", "revised_since": true}
 
-The scaffold, and no more than the scaffold:
+>>> ask("Real GNP/GDP for 2024-Q2", as_of="2026-08")
+{"answer": 23286.5, "vintage": "2025-10", "revised_since": false}
 
-- `src/quizz/services.py`, the endpoints of the two services a run talks to.
-- `compose.yaml`, which brings those two up.
-- `.github/workflows/ci.yml`, which calls the pipeline shared across this toolset, pinned to
-  a tag rather than a branch so somebody else's commit cannot turn this badge red.
+>>> ask("Real GNP/GDP for 2024-Q2")
+{"refused": "refused: this question is not answerable under the as-of contract"}
 
-The dependency list in `pyproject.toml` is empty, which is a decision rather than an
-oversight: a dependency arrives in the commit that first imports it, so the history shows
-what each one was bought for.
+>>> ask("Real GNP/GDP for 2025-Q3", as_of="2026-08")
+{"refused": "refused: this question is not answerable under the as-of contract"}
+```
 
-## Running the services
+## Three answers to one question
+
+The first three lines are the same question about the same quarter, and all three answers are
+correct. United States real output for the second quarter of 2024 was first published at
+22918.7 in August of that year, restated to 23223.9 two months later, and restated again to
+23286.5 in the annual revision of October 2025.
+
+A tool that looks the number up gives the third answer to all three questions. It is wrong by
+368 billion dollars in the first case, and nothing about its response would tell you.
+
+The fourth and fifth lines are refusals, and they are the same sentence. One question gave no
+knowing-time. The other asked about a period that is held back. **Nothing about either response
+says which**, and that is the design rather than an oversight: see below.
+
+## What the gate had to clear
+
+Four prompt variants were recorded against `claude-sonnet-5` on 25 August 2026 and replayed.
+
+| variant | answers | refusals | restraint | leaks | calls exactly right |
+|---|---|---|---|---|---|
+| 0 | 1.000 | 1.000 | 1.000 | 0 | 56 of 56 |
+| 1 | 1.000 | 1.000 | 1.000 | 0 | 56 of 56 |
+| 2 | 1.000 | 1.000 | 1.000 | 0 | 56 of 56 |
+| 3 | 1.000 | 1.000 | 1.000 | 0 | 56 of 56 |
+
+**Four variants were tried, so the pass mark is 23 of 56 rather than 21.** Try enough phrasings
+and keep the best, and the number you report is the maximum of several draws rather than one.
+The threshold rises with the number tried, and the arithmetic is in
+[`src/quizz/gate.py`](src/quizz/gate.py).
+
+**Now the part that matters more than the table.** A perfect score here measures the harness and
+the prompt considerably more than it measures the model.
+
+Every refusal in that table was earned by the server, not by the model declining. The model
+called the tool with the arguments the question stated and the barrier refused, which is exactly
+what it was asked to do and is not judgement on its part. And the model never had to know a
+figure: it passes a knowing-time through and the oracle computes the answer by SQL. What is
+being measured is whether an agent passes the right knowing-time to a tool, and against these
+questions this one does, every time.
+
+An agent that calls the same tool with a knowing-time picked at random from the declared ones
+scores 14.4 of 56, so the questions are not free. They are also not hard for anything that reads
+the question properly, and that is worth saying plainly rather than presenting four rows of
+1.000 as though they were a discovery.
+
+## Run it
+
+```bash
+git clone https://github.com/PNX89/QUIZZ.git && cd QUIZZ
+uv sync --dev
+uv run python examples/asof_session.py
+```
+
+Under a second, offline, with no key and nothing to configure. The figures come from a corpus
+committed in this repository and the scores from cassettes committed beside it.
+
+Two containers are needed only for the retrieval work, and nothing in the ordinary test suite
+touches them:
 
 ```bash
 docker compose up -d
+uv run pytest -m services -q
 docker compose down -v
 ```
 
-Both ports are one above the standard: Redis on 6380, PostgreSQL on 5433. That is measured
-rather than fussy. The machine this was written on already runs PostgreSQL on 5432, and a
-compose file publishing 5432 would either refuse to bind or, far worse, look like it worked
-while every query went to a database nobody meant to touch. Both are bound to 127.0.0.1,
-because compose publishes on every interface by default and a laptop on a shared network
-would otherwise be offering an unauthenticated Redis to it.
+Both publish one port above the standard, Redis on 6380 and PostgreSQL on 5433, and both bind to
+127.0.0.1. That is measured rather than fussy: the machine this was written on already runs
+PostgreSQL on 5432, and compose publishes on every interface by default, which was checked with
+a throwaway service rather than assumed.
 
-No test in the suite needs either service. A test that quietly requires a container is a
-test that passes here and fails for a stranger.
+## The barrier, and how to break it
 
-## Working on it
+Six rules produce a refusal. They are written out in full in
+[`docs/AS_OF_CONTRACT.md`](docs/AS_OF_CONTRACT.md), and the response never says which one fired.
+
+That division is the whole point. A refusal that named its reason would be a search interface for
+the thing it is refusing to reveal: ask about every period in turn, keep the ones refused the
+holdout way, and the boundary is mapped without a single value ever being returned.
+`test_the_refusal_cannot_be_used_to_map_the_holdout` asserts that a held-out period and an
+out-of-range knowing-time produce responses that compare equal.
+
+**A refusal is not the same as saying a figure did not exist yet.** Release calendars are public,
+so "no estimate had been published by then" is safe to say and is a third outcome with its own
+score. Collapsing it into the refusal would be easier and would make the tool useless, because
+every question about a recent period would come back with the same opaque sentence.
+
+### The argument is refused on its name, never on its contents
+
+The tool surface accepts exactly the arguments it declares. Anything else is refused without its
+value being looked at.
+
+The tempting alternative inspects values, notices one naming a held-out window, and rejects it.
+That is a denylist, and a denylist is a list of the attacks somebody thought of. Rename the
+window, change the case, describe it instead of naming it, and the check passes while the barrier
+does not.
+
+`tests/test_tools.py` puts a forbidden value and a harmless one under the same undeclared
+argument name, across several plausible-looking names, and requires the two refusals to be
+**identical**. A denylist passes the first half of that test and fails the second.
+
+### Where the rows are actually unreachable
+
+Retrieval is bound to a knowing-time by two mechanisms, because measurement said neither is
+enough alone.
+
+Filtering with a `WHERE` clause alongside an approximate index does not stop the index being
+walked over inadmissible rows. Measured on this corpus, as the restricted role, with a query
+shaped like the documents it is not allowed to see:
+
+```text
+Index Scan using notes_hnsw on notes
+  Rows Removed by Filter: 3
+```
+
+Three forbidden documents were read in order to be discarded. Every row that came back was
+admissible, which is why nothing about the result set reveals it.
+
+With both predicates in the index, the same role and the same query vector visit none of them.
+Row level security then covers what an index cannot: the retrieval role cannot return a
+forbidden row under any query it can write, including one with no `WHERE` clause at all. The
+index is a convention and the policy is enforcement, and **row level security stops rows being
+returned without stopping them being read**.
+
+The retrieval role is granted select on the documents and nothing on the tables that define the
+boundary, so it cannot read where the boundary is.
+
+## Scoring a refusal
+
+The two halves are reported separately and are never averaged.
+
+An agent that answers everything looks strong on accuracy and has no barrier at all. An agent
+that refuses everything has a perfect barrier and is useless. A single averaged number is a
+number both of them can reach, which is how a harness ends up unable to tell them apart. Three
+deliberately broken agents are scored against the question set in `tests/baselines.py`, and a
+test requires that it separates them:
+
+| agent | answers | refusals | leaks |
+|---|---|---|---|
+| the oracle | 1.000 | 1.000 | 0 |
+| looks the number up | 0.333 | 0.000 | 7 |
+| refuses everything | 0.000 | 1.000 | 0 |
+
+The 0.333 is not tuned. Each observation is asked at its first release, one month before its
+last restatement, and today, and only the third of those forgives a tool with no concept of a
+knowing-time.
+
+**A leak is counted on its own** rather than diluted into a percentage. It is a question whose
+only correct response was a refusal and which the agent answered with a figure, and it is the
+failure with a cost outside the harness.
+
+Scoring is exact numeric agreement. There is no tolerance and no model anywhere in the scoring
+path, because the whole argument is that the correct answer is computable, and scoring a
+computable answer by asking a model whether two numbers look close gives away the only advantage
+this has.
+
+### The question set is derived, and checked for measuring anything
+
+56 questions built from the corpus by stated rules rather than chosen by hand. A set can
+be entirely correct and measure nothing: fill it with questions whose answer at the knowing-time
+equals the figure published today, and a broken tool scores full marks. **24 of the 36
+answerable questions discriminate and 12 do not**, asserted as a proportion so
+that changing the selection rules cannot erode it quietly.
+
+Two questions were removed for being unaskable. One named a holdout window explicitly, which the
+tool surface has no argument for, so the set counted it as a refusal while every agent scored it
+as an answer. The other required an empty knowing-time, which no rendered sentence can express.
+Both were found by grading the calls rather than only the outcomes.
+
+## Recording, and what a cassette does not prove
+
+224 exchanges were recorded once, for 1.14 euros, and are replayed by every test. Nothing in a
+required job reaches the network or needs a key.
+
+**A cassette that cannot miss is a cassette that lies.** Change the prompt template, replay the
+recordings, and a naive store hands back the old responses: the score does not move, the change
+looks safe, and the run meant to measure the new prompt measured the old one. The key covers the
+whole rendered request, template text and tool schemas included, so one changed character misses
+every recording and the miss is an error rather than a shrug.
+
+This provider's message endpoint takes no sampling temperature. Sampling cannot be pinned, which
+makes replay the only route to a reproducible score rather than merely the cheaper one, and means
+a re-recording is expected to move these numbers rather than reproduce them.
+
+## The corpus, and a source that was ruled out
+
+The figures come from the Federal Reserve Bank of Philadelphia's Real-Time Data Set for
+Macroeconomists, which publishes, for each vintage, the whole history of a series as it stood at
+that date. What is committed here is a declared extract: 1,391 rows across four series, only the
+vintages where a value changed, with the publisher, the retrieval date and both windows recorded
+beside it in `SOURCE.json`.
+
+The obvious archive is ALFRED and it is ruled out by its own terms rather than by preference. The
+FRED terms prohibit "any data mining, mirroring, robots, scraping, or similar data-gathering or
+extraction methods except as expressly allowed by the terms of use applicable to the FRED API",
+and separately prohibit use of that content "in connection with the development or training of
+any software program or system or machine learning, including, but not limited to, large language
+models". A harness for a language model reading economic data is not a grey area against that
+second clause.
+
+**The capture refuses to write rather than writing something wrong.** The first attempt used an
+endpoint that accepts a vintage parameter and silently ignores it: four vintages of one quarter
+came back byte identical at today's value. A corpus built that way holds four files named for
+four knowing-times, every one carrying the latest revision, and every test passes while measuring
+nothing. The guard checks declared revision behaviour in both directions and has caught three
+things, including a date pattern of my own that matched nothing at all.
+
+The corpus carries two kinds of revision rather than one. The national accounts are restated
+because better source data arrived. A seasonally adjusted consumer price index is restated every
+February, when the seasonal factors are recalculated and several years of history move at once
+without anybody having learned anything new about the month in question. Measured over this
+extract, 475 of its recorded changes land in a February vintage.
+
+## Surviving being killed
+
+A run walks the question set, and the graph checkpoint and the tool effect record are written in
+one transaction, so a resumed run never replays a step whose effect was already recorded. The
+test sends the process `SIGKILL`, which no `finally` block and no buffer flush survives, because
+the claim is about what the database holds after the process stops existing.
+
+The limit is stated rather than discovered. No transaction can be atomic with a paid call to
+somebody else's API. An in-flight row commits before the call, so a crash after the effect leaves
+evidence, and a resume that finds one stops and names the step instead of repeating it. Repeating
+it is how a budget with a cap silently becomes twice the cap.
+
+## Limitations
+
+**The score measures the harness and the prompt more than the model.** Stated above and repeated
+here because it is the most important sentence on this page. Every refusal was earned by the
+server, and the model never had to know a figure.
+
+**These numbers are about one model on one date.** They are not evidence about the model behind
+that name today, they do not transfer to another model, and a provider can change what sits
+behind a name without changing the name.
+
+**The embeddings are not a model.** Retrieval uses the signed hashing trick over word tokens, in
+sixty four dimensions. That is a genuine bag of words embedding and a poor semantic one. The
+claim here is about *when* a document becomes retrievable, not about retrieval quality, and
+putting a paid model in front of an argument that is visible in a query plan would only obscure
+it.
+
+**The barrier is not claimed to be unbreakable.** The claim is narrower and checkable: the
+response to a refused question carries no information about which rule refused it. Timing,
+ordering and volume are not addressed at all, and a reader with the source in front of them knows
+the rules anyway, which is the point.
+
+**Nothing here is production.** No real users, no operational history, no system anyone depends
+on. The corpus is an extract, the services run in containers on one machine, and the agent has no
+write path to anything.
+
+**The question set is small and its questions are of one shape.** 56 questions about four
+series from one publisher, all asking what a figure read at a stated time. An agent could do well
+here and badly on a question phrased in a way this set never tries.
+
+**The gate corrects for prompt variants and nothing else.** Trying four models rather than four
+phrasings is the same selection effect and would need the same correction, and this run did not
+do it.
+
+## Development
 
 ```bash
 uv sync --dev
@@ -56,7 +297,13 @@ uv run mypy
 uv run pytest
 ```
 
-Those five are what continuous integration runs. `CONTRIBUTING.md` carries the rest.
+Those are what continuous integration runs, in a workflow shared across this toolset and pinned
+to a tag so that a commit elsewhere cannot turn this badge red. The tests that need containers
+are deselected from that run by their marker and run in their own job with real Redis and real
+pgvector behind them, because a skipped test reports as a pass and nobody reads it.
+
+`CONTRIBUTING.md` carries the rest, including why the evidence under `docs/evidence/` is
+committed rather than left in a log.
 
 ## Licence
 
