@@ -34,7 +34,18 @@ def loaded() -> Iterator[psycopg.Connection[tuple[object, ...]]]:
     memory = corpus.connect()
     try:
         note_corpus = notes.build(memory)
-        knowing_times = tuple(sorted({q.as_of for q in golden.build(memory) if q.as_of}))
+        # ONLY the knowing-times of questions the contract can answer. A refused knowing-time
+        # such as 2030-01 sits outside the corpus, so an index built for it covers everything
+        # and the planner may prefer it to the tight one, which is how this was found.
+        knowing_times = tuple(
+            sorted(
+                {
+                    question.as_of
+                    for question in golden.build(memory)
+                    if question.as_of and question.expected != "refused"
+                }
+            )
+        )
     finally:
         memory.close()
 
@@ -119,7 +130,10 @@ def test_the_covering_index_visits_none_of_them(
         query, params = retrieval.search_sql(LATE_KNOWING_TIME, HOLDOUT_RANK, embedding)
         plan = retrieval.explain(cursor, query, params)
 
-    assert plan.index == retrieval.index_name(LATE_KNOWING_TIME), plan.text
+    # The claim is the count of forbidden rows read, not which of several covering indexes the
+    # planner happened to choose. Asserting a name here was asserting on a tie break, and it
+    # passed for a while by luck.
+    assert plan.index is not None and plan.index.startswith("notes_hnsw_asof_"), plan.text
     assert plan.rows_removed_by_filter == 0, plan.text
 
 
@@ -211,3 +225,31 @@ def test_the_owner_can_read_the_holdout_definition(
         row = cursor.fetchone()
         assert row is not None
         assert int(str(row[0])) >= 1
+
+
+def test_an_index_for_a_refused_knowing_time_is_refused(
+    loaded: psycopg.Connection[tuple[object, ...]],
+) -> None:
+    """An index built for a knowing-time the contract always refuses can only be too broad.
+
+    It reaches past the end of the corpus, so it is a superset of every index that can serve an
+    answerable query, and the planner may prefer it. Bootstrapping with one raises rather than
+    building it.
+    """
+    memory = corpus.connect()
+    try:
+        note_corpus = notes.build(memory)
+    finally:
+        memory.close()
+
+    with loaded.cursor() as cursor:
+        for impossible in ("2030-01", "1900-01"):
+            with pytest.raises(ValueError, match="can only ever be too broad"):
+                retrieval.bootstrap(cursor, note_corpus, (impossible,), HOLDOUT_RANK)
+
+    # And the documents are still there, because the check runs before the first statement.
+    with loaded.cursor() as cursor:
+        cursor.execute("select count(*) from notes")
+        row = cursor.fetchone()
+        assert row is not None
+        assert int(str(row[0])) > 1000
