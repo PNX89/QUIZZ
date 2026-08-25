@@ -8,6 +8,8 @@ cases, each dominated by a different term.
 
 from __future__ import annotations
 
+import re
+
 import pytest
 
 from quizz.ratelimit import RetryPolicy, TokenBucket
@@ -93,5 +95,5 @@ def test_the_refill_term_alone_would_accept_a_lifetime_the_retries_outlive() -> 
     policy = RetryPolicy(attempts=6, base_delay=1.0, multiplier=2.0)
     refill_from_empty = 5 / 5.0
     assert refill_from_empty < policy.horizon()
-    with pytest.raises(ValueError, match="31.0s of retries"):
+    with pytest.raises(ValueError, match=re.escape("31.0s of retries")):
         TokenBucket(capacity=5, refill_per_second=5.0, policy=policy, ttl_seconds=refill_from_empty)
