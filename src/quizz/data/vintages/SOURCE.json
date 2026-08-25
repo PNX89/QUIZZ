@@ -1,0 +1,52 @@
+{
+  "publisher": "Federal Reserve Bank of Philadelphia, Real-Time Data Set for Macroeconomists",
+  "publisher_url": "https://www.philadelphiafed.org/surveys-and-data/real-time-data-research",
+  "retrieved": "2026-08-25",
+  "first_vintage": "2019-01",
+  "first_observation": "2015-01",
+  "note": "An extract, not the data set. Only the windows above, and within them only the vintages where a value changed. Go to the publisher for the whole of it.",
+  "series": [
+    {
+      "name": "ROUTPUT",
+      "label": "Real GNP/GDP",
+      "units": "billions of chained dollars, seasonally adjusted",
+      "url": "https://www.philadelphiafed.org/-/media/FRBP/Assets/Surveys-And-Data/real-time-data/data-files/xlsx/routputMvQd.xlsx?sc_lang=en&hash=B3AD0AED9E268AA077E8D9B8AAF2AC83",
+      "revisable": true,
+      "rows": 263,
+      "observations": 46,
+      "vintages": 89,
+      "releases_url": "https://www.philadelphiafed.org/-/media/FRBP/Assets/Surveys-And-Data/real-time-data/data-files/xlsx/routput_first_second_third.xlsx?sc_lang=en&hash=AB8BB59BBBF6840DE1448851E90D7A80",
+      "release_rows": 42
+    },
+    {
+      "name": "NOUTPUT",
+      "label": "Nominal GNP/GDP",
+      "units": "billions of dollars, seasonally adjusted",
+      "url": "https://www.philadelphiafed.org/-/media/FRBP/Assets/Surveys-And-Data/real-time-data/data-files/xlsx/noutputMvQd.xlsx?sc_lang=en&hash=9A20CEF072FD750998CD62A38E6A8232",
+      "revisable": true,
+      "rows": 263,
+      "observations": 46,
+      "vintages": 89
+    },
+    {
+      "name": "P",
+      "label": "GDP price index",
+      "units": "index, seasonally adjusted",
+      "url": "https://www.philadelphiafed.org/-/media/FRBP/Assets/Surveys-And-Data/real-time-data/data-files/xlsx/pMvQd.xlsx?sc_lang=en&hash=A9B06A9E6E7E92CA131A04BD5AE6856D",
+      "revisable": true,
+      "rows": 261,
+      "observations": 46,
+      "vintages": 88
+    },
+    {
+      "name": "PCPI",
+      "label": "Consumer price index, seasonally adjusted",
+      "units": "index, 1982 to 1984 equals 100",
+      "url": "https://www.philadelphiafed.org/-/media/FRBP/Assets/Surveys-And-Data/real-time-data/data-files/xlsx/pcpiMvMd.xlsx?sc_lang=en&hash=E41A743DC6423F950B10C3DE7A4F674D",
+      "revisable": true,
+      "rows": 604,
+      "observations": 137,
+      "vintages": 90
+    }
+  ]
+}
