@@ -36,6 +36,7 @@ import re
 from dataclasses import dataclass
 from typing import Any, Protocol
 
+from quizz import barrier
 from quizz.notes import DIMENSIONS, Note
 
 ROLE = "retriever"
@@ -146,6 +147,15 @@ def bootstrap(
             f"where published <= {_literal_knowing_time(as_of)} "
             f"and period_rank < {int(holdout_rank)}"
         )
+    # The barrier schema itself, which this repository owns and QUALMZ adopts. It lives beside
+    # the documents so the boundary and the rows it governs are in one place and one backup.
+    for statement in barrier.install(None):
+        cursor.execute(statement)
+    # The role-scoped grant, and this is the whole of it. The retrieval role gets select on the
+    # documents and NOTHING on the two tables above. A role that can read the holdout definition
+    # can compute the boundary exactly, and a barrier a caller can measure is one it can work
+    # around. The rules are public in `quizz/barrier.py`; the role's own queries cannot reach
+    # them, and those are different things.
     cursor.execute(f"grant select on notes to {ROLE}")
     cursor.execute(POLICY)
     cursor.execute("analyze notes")

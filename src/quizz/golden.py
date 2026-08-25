@@ -26,8 +26,9 @@ import sqlite3
 from dataclasses import dataclass
 from typing import Literal
 
-from quizz.asof import HOLDOUT_FROM, period_key
+from quizz.barrier import is_held_out
 from quizz.corpus import coverage
+from quizz.tools import ToolCall
 
 Expected = Literal["answer", "not_published", "refused"]
 
@@ -104,7 +105,7 @@ def _eligible(connection: sqlite3.Connection, series: str) -> list[str]:
             "order by observation",
             (series, first_vintage),
         )
-        if period_key(str(row["observation"])) < period_key(HOLDOUT_FROM)
+        if not is_held_out(str(row["observation"]))
     ]
 
 
@@ -129,7 +130,7 @@ def _first_held_out(connection: sqlite3.Connection, series: str) -> str | None:
         (series,),
     ):
         period = str(row["observation"])
-        if period_key(period) >= period_key(HOLDOUT_FROM):
+        if is_held_out(period):
             return period
     return None
 
@@ -250,9 +251,9 @@ def build(connection: sqlite3.Connection) -> tuple[Question, ...]:
         ),
     ]
     for series in coverage().series:
-        # Compared with `period_key`, not with a string. `2025-Q1` sorts after the literal
-        # `2025` and is nowhere near the holdout, so a lexical test picked an answerable period
-        # for every series and quietly added no held-out questions at all.
+        # Asked of the declared windows rather than compared as text. `2025-Q1` sorts after
+        # the literal `2025` and is nowhere near the holdout, so a lexical test picked an
+        # answerable period for every series and quietly added no held-out questions at all.
         period = _first_held_out(connection, series)
         if period is None:
             continue
@@ -269,3 +270,21 @@ def build(connection: sqlite3.Connection) -> tuple[Question, ...]:
 
     questions.extend(refusals)
     return tuple(questions)
+
+
+def expected_call(question: Question) -> ToolCall:
+    """The call this question calls for, which is what tool-call grading compares against.
+
+    Every question in this set is one `answer_as_of`, including the ones whose only correct
+    outcome is a refusal. That is deliberate: refusing is the SERVER's job, not the model's, and
+    a model that declines to call the tool because it suspects a holdout has guessed rather than
+    asked. The barrier is what makes the refusal correct, and it can only do that if it is asked.
+    """
+    return ToolCall.of(
+        "answer_as_of",
+        {
+            "series": question.series,
+            "observation": question.observation,
+            "as_of": question.as_of,
+        },
+    )

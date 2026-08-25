@@ -25,16 +25,16 @@ from __future__ import annotations
 import sqlite3
 from dataclasses import dataclass
 
+from quizz.barrier import is_held_out
 from quizz.corpus import coverage
 
 #: One message, every refusal, byte for byte. Asserted in tests rather than left to care.
 REFUSAL = "refused: this question is not answerable under the as-of contract"
 
-#: Observations from this period onward are held out and are never answered, at any
-#: knowing-time. Expressed once, as a month, and compared through `period_key` so the quarterly
-#: and monthly series need no separate rule: 2025-Q3 covers months 7 to 9 and is held out,
-#: 2025-Q2 ends in month 6 and is not.
-HOLDOUT_FROM = "2025-07"
+#: What is held out is DECLARED DATA rather than a constant here. `quizz.barrier` carries the
+#: windows, the dates they were declared, the reasons, and the promotions that would release
+#: them. A boundary written as a number in this file is a boundary somebody can move in a
+#: commit that looks like every other commit.
 
 
 def period_key(period: str) -> tuple[int, int]:
@@ -138,7 +138,7 @@ def answer_as_of(
         return Refused()
     if as_of < declared.first_vintage or as_of > latest_vintage(connection):
         return Refused()
-    if period_key(observation) >= period_key(HOLDOUT_FROM):
+    if is_held_out(observation):
         return Refused()
 
     parameters = {"series": series, "observation": observation, "as_of": as_of}

@@ -21,7 +21,10 @@ classifiers = [
 # one was bought for. The services this repository talks to run in containers and are
 # described in compose.yaml; talking to them needs client libraries, and those land with
 # the code that talks.
-dependencies = []
+# The MCP SDK is a RUNTIME dependency, not a development one: the tool surface is a thing a
+# reader is meant to run against their own client, and a server whose transport only exists in
+# the test environment is a server nobody can use.
+dependencies = ["mcp>=2.0.0,<3"]
 
 [project.urls]
 Homepage = "https://github.com/PNX89/QUIZZ"
