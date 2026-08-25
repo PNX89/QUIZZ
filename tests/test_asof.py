@@ -13,14 +13,13 @@ import sqlite3
 import pytest
 
 from quizz.asof import (
-    HOLDOUT_FROM,
     REFUSAL,
     Answer,
     NotPublished,
     Refused,
     answer_as_of,
-    period_key,
 )
+from quizz.barrier import is_held_out
 
 # The published history of one quarter, which is the whole argument in four rows.
 HISTORY = [
@@ -148,7 +147,8 @@ def test_the_period_either_side_of_the_holdout_line_behaves_differently(
     db: sqlite3.Connection,
 ) -> None:
     """The cut is where it is declared to be, and one quarter earlier is answerable."""
-    assert period_key("2025-Q2") < period_key(HOLDOUT_FROM) <= period_key("2025-Q3")
+    assert not is_held_out("2025-Q2")
+    assert is_held_out("2025-Q3")
     assert isinstance(answer_as_of(db, "ROUTPUT", "2025-Q2", "2026-08"), Answer)
     assert isinstance(answer_as_of(db, "ROUTPUT", "2025-Q3", "2026-08"), Refused)
 
