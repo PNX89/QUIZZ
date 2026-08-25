@@ -35,7 +35,11 @@ build-backend = "hatchling.build"
 # compose.yaml and compares it against the defaults in src/quizz/services.py, and parsing
 # YAML with a regular expression is how the portfolio's map generator once read the word
 # "error" out of a prose comment.
+# `capture` is deliberately NOT in `dev`. scripts/capture_vintages.py is the only code here
+# that reaches the network, it is run by hand rather than by CI, and openpyxl exists in this
+# repository to read one publisher's spreadsheets. Nothing in the test suite imports it.
 [dependency-groups]
+capture = ["openpyxl>=3.1"]
 dev = [
     "pytest>=8",
     "ruff>=0.6",
