@@ -24,7 +24,10 @@ classifiers = [
 # The MCP SDK is a RUNTIME dependency, not a development one: the tool surface is a thing a
 # reader is meant to run against their own client, and a server whose transport only exists in
 # the test environment is a server nobody can use.
-dependencies = ["mcp>=2.0.0,<3"]
+dependencies = [
+    "langgraph>=0.2",
+    "mcp>=2.0.0,<3",
+]
 
 [project.urls]
 Homepage = "https://github.com/PNX89/QUIZZ"

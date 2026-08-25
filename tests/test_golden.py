@@ -5,6 +5,8 @@ from __future__ import annotations
 import sqlite3
 from collections import Counter
 
+import pytest
+
 from quizz import golden
 from quizz.asof import Answer, answer_as_of
 from quizz.barrier import is_held_out
@@ -90,3 +92,31 @@ def test_the_variants_all_carry_the_knowing_time(db: sqlite3.Connection) -> None
         assert "{as_of}" in template
         assert "{observation}" in template
         assert "{label}" in template
+
+
+def test_a_question_the_tool_surface_cannot_express_is_refused_by_the_grader(
+    db: sqlite3.Connection,
+) -> None:
+    """The hole this closes was real and silent.
+
+    The set once held a question naming a holdout window explicitly. The tool surface has no
+    argument for one, so `expected_call` dropped it and the question became an ordinary
+    answerable call: a question the set counted as a refusal and an agent scored as an answer,
+    which is a free mark for every agent that ever ran against it. Found by driving the whole
+    set through the graph and counting, not by reading the code.
+    """
+    unreachable = golden.Question(
+        id="unreachable",
+        series="ROUTPUT",
+        observation="2024-Q2",
+        as_of="2026-08",
+        expected="refused",
+        named_window="recent-tail",
+    )
+    with pytest.raises(ValueError, match="cannot be put to an agent"):
+        golden.expected_call(unreachable)
+
+
+def test_no_question_in_the_set_names_a_window(db: sqlite3.Connection) -> None:
+    for question in golden.build(db):
+        assert golden.expected_call(question) is not None
