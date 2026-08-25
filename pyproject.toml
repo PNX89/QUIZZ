@@ -50,6 +50,7 @@ dev = [
     # the type checker sees the same tree everywhere: a module CI cannot import is a module CI
     # cannot check.
     "psycopg[binary]>=3.2",
+    "redis>=5",
 ]
 
 [tool.hatch.build.targets.wheel]
