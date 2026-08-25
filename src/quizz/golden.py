@@ -45,6 +45,17 @@ OBSERVATIONS_PER_SERIES = 3
 #: the wording, so the same question is asked several ways and the gate accounts for the number
 #: of variants tried. None of these omits the knowing-time: an omitted knowing-time is a
 #: different question with a different correct answer, and it appears in the set as one.
+#: For the questions that genuinely have no knowing-time. They cannot use the templates below,
+#: which all carry one: a question that says "as of nothing" is not a question anybody asks, and
+#: rendering the absence as a phrase would be testing whether a model can parse a phrase. These
+#: simply do not mention one, which is exactly what the refusal rule is about.
+NO_KNOWING_TIME_VARIANTS: tuple[str, ...] = (
+    "What was {label} for {observation}?",
+    "Tell me the published figure for {label} in {observation}.",
+    "What did {label} read for {observation}?",
+    "Report {label} for {observation}.",
+)
+
 VARIANTS: tuple[str, ...] = (
     "What was {label} for {observation}, as of {as_of}?",
     "As of {as_of}, what figure had been published for {label} in {observation}?",
@@ -198,7 +209,16 @@ def build(connection: sqlite3.Connection) -> tuple[Question, ...]:
     # The refusals. One per rule in docs/AS_OF_CONTRACT.md that an agent can actually reach,
     # so the set exercises the contract rather than one convenient corner of it.
     #
-    # One rule is deliberately absent. Naming a holdout window explicitly is a refusal at the
+    # TWO rules are deliberately absent, both for the same reason: an agent cannot be asked the
+    # question, so scoring it would be scoring something else.
+    #
+    # An EMPTY knowing-time is a refusal at the oracle, and the sentence a person writes cannot
+    # distinguish it from no knowing-time at all. "What was real output for 2018 Q4?" is the
+    # same sentence either way, so the expected call demanded an empty string that no agent
+    # could produce from it, and the model was marked wrong for answering correctly. Found by
+    # grading the calls rather than only the outcomes, which is the reason to grade both.
+    #
+    # Naming a holdout window explicitly is a refusal at the
     # oracle, and the tool surface has no argument for it, so an agent cannot ask that question
     # at all: an attempt becomes an undeclared argument and is rejected before the contract is
     # consulted. A question no agent can be asked is not a question to score agents on, and
@@ -215,14 +235,6 @@ def build(connection: sqlite3.Connection) -> tuple[Question, ...]:
             as_of=None,
             expected="refused",
             reason="no knowing-time was given at all",
-        ),
-        Question(
-            id="refuse:empty-knowing-time",
-            series=first_series,
-            observation=answerable,
-            as_of="",
-            expected="refused",
-            reason="the knowing-time was supplied and empty",
         ),
         Question(
             id="refuse:before-the-corpus",
@@ -293,3 +305,26 @@ def expected_call(question: Question) -> ToolCall:
             "as_of": question.as_of,
         },
     )
+
+
+def render(question: Question, variant: int, labels: dict[str, str]) -> str:
+    """The question as a person would write it, for one of the declared phrasings.
+
+    `variant` indexes both template families, so variant 2 means the same phrasing position
+    whether or not the question carries a knowing-time. Scoring compares variants against each
+    other, and a variant that meant a different position in each family would compare nothing.
+    """
+    family = VARIANTS if question.as_of else NO_KNOWING_TIME_VARIANTS
+    template = family[variant % len(family)]
+    return template.format(
+        label=labels[question.series],
+        observation=question.observation,
+        as_of=question.as_of or "",
+    )
+
+
+def labels_from(connection: sqlite3.Connection) -> dict[str, str]:
+    return {
+        str(row["name"]): str(row["label"])
+        for row in connection.execute("select name, label from series")
+    }
