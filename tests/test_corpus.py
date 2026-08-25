@@ -94,3 +94,19 @@ def test_the_corpus_holds_both_kinds_of_revision(db: sqlite3.Connection) -> None
     ).fetchone()["n"]
     assert februaries > 100, "the annual seasonal revision is missing from the corpus"
     assert others > 100, "the national accounts revisions are missing from the corpus"
+
+
+def test_a_knowing_time_that_is_not_one_is_refused_before_it_reaches_the_database() -> None:
+    """The one value that has to be interpolated into DDL is checked rather than trusted.
+
+    PostgreSQL takes no bound parameters in a CREATE INDEX predicate, so the knowing-time is
+    written into the statement as a literal. It comes from the golden set and not from a
+    caller, and it is validated anyway, because "it cannot happen here" is how interpolated SQL
+    gets written.
+    """
+    from quizz import retrieval
+
+    assert retrieval._literal_knowing_time("2024-09") == "'2024-09'"
+    for bad in ("2024-9", "2024-09-01", "'; drop table notes; --", "", "20240900"):
+        with pytest.raises(ValueError, match="not a knowing-time"):
+            retrieval._literal_knowing_time(bad)

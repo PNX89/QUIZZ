@@ -25,3 +25,37 @@ jobs:
       python-versions: '["3.11", "3.12", "3.13"]'
       sync-args: "--dev"
       run-mypy: true
+
+  # The retrieval barrier is a claim about a query plan, and a query plan needs a real planner.
+  # This job is here rather than in the shared workflow because a service container is an
+  # argument this repository is making and not shared plumbing.
+  #
+  # The suite it runs is DESELECTED from the job above by its marker rather than skipped inside
+  # it, so those tests are visibly absent from that count and visibly present in this one. A
+  # skipped test reports as a pass and nobody reads it.
+  containers:
+    name: the retrieval barrier against a real pgvector
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_USER: quizz
+          POSTGRES_PASSWORD: quizz
+          POSTGRES_DB: quizz
+        # 5433 on the host for the same reason compose.yaml uses it: one above the standard, so
+        # nothing on a runner or a laptop can already hold the port.
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U quizz -d quizz"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.0.1
+        with:
+          enable-cache: true
+      - run: uv sync --dev
+      - run: uv run pytest -m services -q
