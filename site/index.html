@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QUIZZ</title>
+<meta name="description" content="answering what a statistic said at the time, and refusing when it cannot">
+<style>
+  /* Light is defined on bare :root so a viewer with no preference gets a complete palette,
+     and only the tokens that differ are redefined for dark. */
+  :root {
+    color-scheme: light dark;
+    --bg: #fbfbfa; --fg: #1a1a18; --muted: #55554e; --rule: #dedcd4;
+    --term-bg: #f4f3ee; --term-fg: #23231f; --accent: #7a4b12;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16161a; --fg: #e9e8e3; --muted: #a2a19a; --rule: #2e2e34;
+      --term-bg: #101014; --term-fg: #dcdbd4; --accent: #d9a441;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 3rem 1.25rem 5rem;
+    background: var(--bg); color: var(--fg);
+    font: 16px/1.65 ui-sans-serif, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  main { max-width: 46rem; margin: 0 auto; }
+  h1 { font-size: 2.25rem; letter-spacing: -0.02em; margin: 0 0 .35rem; }
+  .blurb { color: var(--muted); margin: 0 0 2rem; font-size: 1.05rem; }
+  .claim { font-size: 1.2rem; line-height: 1.5; margin: 0 0 2rem; border-left: 3px solid var(--accent); padding-left: 1rem; }
+  .facts { display: flex; flex-wrap: wrap; gap: 1.5rem; padding: 1rem 0; margin: 0 0 2rem;
+           border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+  .facts div { font-size: .9rem; }
+  .facts dt { color: var(--muted); font-size: .75rem; text-transform: uppercase; letter-spacing: .07em; }
+  .facts dd { margin: .15rem 0 0; font-variant-numeric: tabular-nums; }
+  h2 { font-size: .78rem; text-transform: uppercase; letter-spacing: .09em; color: var(--muted);
+       margin: 2.5rem 0 .5rem; font-weight: 600; }
+  .cmd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .85rem;
+         color: var(--muted); margin: 0 0 .5rem; }
+  /* Wide output scrolls inside its own box. The page body never scrolls sideways. */
+  pre { background: var(--term-bg); color: var(--term-fg); padding: 1.25rem; border-radius: 6px;
+        overflow-x: auto; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: .8rem; line-height: 1.5; margin: 0; }
+  .note { color: var(--muted); font-size: .82rem; margin: .6rem 0 0; }
+  ul { list-style: none; padding: 0; margin: .5rem 0 0; }
+  li { padding: .35rem 0; border-bottom: 1px solid var(--rule); }
+  li span { color: var(--muted); font-size: .88rem; }
+  a { color: inherit; text-decoration-color: var(--accent); text-underline-offset: 3px; }
+  a:hover { color: var(--accent); }
+  footer { margin-top: 3.5rem; padding-top: 1.25rem; border-top: 1px solid var(--rule);
+           color: var(--muted); font-size: .82rem; }
+</style>
+</head>
+<body>
+<main>
+  <h1>QUIZZ</h1>
+  <p class="blurb">answering what a statistic said at the time, and refusing when it cannot.</p>
+
+  <p class="claim">A published figure is revised for years, so the answer to a question about the past depends on when you ask. This answers at a stated knowing-time, refuses when it cannot answer honestly, and is scored on both.</p>
+
+  <dl class="facts">
+    <div><dt>Tests</dt><dd>165</dd></div>
+    <div><dt>Python</dt><dd>3.11 to 3.13</dd></div>
+    <div><dt>Release</dt><dd>v0.1.0</dd></div>
+    <div><dt>Licence</dt><dd>MIT</dd></div>
+  </dl>
+
+  <h2>The demo, as it really ran</h2>
+  <p class="cmd">$ uv run python examples/asof_session.py</p>
+  <pre>Real GNP/GDP for the second quarter of 2024, asked at five moments.
+
+&gt;&gt;&gt; ask(&quot;Real GNP/GDP for 2024-Q2&quot;, as_of=&quot;2024-08&quot;)
+{&quot;answer&quot;: 22918.7, &quot;vintage&quot;: &quot;2024-08&quot;, &quot;revised_since&quot;: true}
+
+&gt;&gt;&gt; ask(&quot;Real GNP/GDP for 2024-Q2&quot;, as_of=&quot;2024-10&quot;)
+{&quot;answer&quot;: 23223.9, &quot;vintage&quot;: &quot;2024-10&quot;, &quot;revised_since&quot;: true}
+
+&gt;&gt;&gt; ask(&quot;Real GNP/GDP for 2024-Q2&quot;, as_of=&quot;2026-08&quot;)
+{&quot;answer&quot;: 23286.5, &quot;vintage&quot;: &quot;2025-10&quot;, &quot;revised_since&quot;: false}
+
+&gt;&gt;&gt; ask(&quot;Real GNP/GDP for 2024-Q2&quot;)
+{&quot;refused&quot;: &quot;refused: this question is not answerable under the as-of contract&quot;}
+
+&gt;&gt;&gt; ask(&quot;Real GNP/GDP for 2025-Q3&quot;, as_of=&quot;2026-08&quot;)
+{&quot;refused&quot;: &quot;refused: this question is not answerable under the as-of contract&quot;}
+
+The two refusals are the same sentence, and that is the design: one says the
+question has no knowing-time and the other says the period is held back, and
+nothing about either response says which.
+
+Scored against 56 questions, replayed from committed cassettes.
+Model claude-sonnet-5, recorded 2026-08-25.
+
+variant   answers  refusals  restraint  leaks  calls right
+      0     1.000     1.000      1.000      0     56/56
+      1     1.000     1.000      1.000      0     56/56
+      2     1.000     1.000      1.000      0     56/56
+      3     1.000     1.000      1.000      0     56/56
+
+Four variants were tried, so the pass mark is 23 of 56, not 21.
+An agent asking at a random knowing-time scores 14.4 of 56. This one scores 56.</pre>
+  <p class="note">Output captured on 2026-08-25. It is committed to the repository and a test fails when it
+    stops matching a live run, so this page cannot quietly drift from the code it describes.</p>
+
+  <h2>Read it</h2>
+  <ul>
+    <li><a href="https://github.com/PNX89/QUIZZ">Source on GitHub</a> <span>the README carries the argument in full</span></li>
+    <li><a href="https://github.com/PNX89/QUIZZ/releases/tag/v0.1.0">Release v0.1.0</a> <span>changelog and tag</span></li>
+  </ul>
+
+  <h2>The rest of the toolset</h2>
+  <ul>
+      <li><a href="https://pnx89.github.io/QUACKZ/">QUACKZ</a> <span>deflating a backtest that only looks good because it was picked out of two hundred</span></li>
+      <li><a href="https://pnx89.github.io/QUOTEZ/">QUOTEZ</a> <span>market data an agent can read and cannot act on</span></li>
+      <li><a href="https://pnx89.github.io/QUELLZ/">QUELLZ</a> <span>measuring what prompt-injection containment costs in utility as well as in attack rate</span></li>
+      <li><a href="https://pnx89.github.io/QUIDZ/">QUIDZ</a> <span>refusing the outbound payment that would have gone out twice</span></li>
+      <li><a href="https://pnx89.github.io/QUESTZ/">QUESTZ</a> <span>stopping a scraper before it writes a CSV from a page that changed shape</span></li>
+  </ul>
+
+  <footer>Quelin Zammit. Built for the failure that does not announce itself.</footer>
+</main>
+</body>
+</html>
