@@ -37,6 +37,7 @@ from dataclasses import dataclass
 from typing import Any, Protocol
 
 from quizz import barrier
+from quizz.corpus import coverage
 from quizz.notes import DIMENSIONS, Note
 
 ROLE = "retriever"
@@ -122,7 +123,28 @@ def bootstrap(
     knowing_times: tuple[str, ...],
     holdout_rank: int,
 ) -> None:
-    """Build the table, the indexes and the policy from scratch. Idempotent by dropping first."""
+    """Build the table, the indexes and the policy from scratch. Idempotent by dropping first.
+
+    Every argument is checked BEFORE the first statement runs. The first version validated the
+    knowing-times after creating the table, which meant a bad argument dropped the existing
+    documents on its way to raising.
+    """
+    if not notes:
+        raise ValueError("a corpus with no documents indexes nothing")
+    latest = max(note.published for note in notes)
+    declared = coverage()
+    for as_of in knowing_times:
+        # An index for a knowing-time the contract always refuses is worse than useless. It can
+        # never serve a query that is answered, and because its predicate reaches past the end
+        # of the corpus it is a SUPERSET of every index that can, so the planner may prefer it
+        # to the tight one. Found when the planner picked an index built for the year 2030.
+        if as_of < declared.first_vintage or as_of > latest:
+            raise ValueError(
+                f"{as_of} is outside the corpus, which runs {declared.first_vintage} to "
+                f"{latest}. Every question at that knowing-time is refused, so an index for it "
+                "can only ever be too broad."
+            )
+
     cursor.execute(SCHEMA % {"dimensions": DIMENSIONS})
     for note in notes:
         cursor.execute(
