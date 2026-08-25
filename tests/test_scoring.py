@@ -37,13 +37,18 @@ def test_looking_the_number_up_fails_two_thirds_of_the_answerable_questions(
 def test_looking_the_number_up_leaks_the_holdout(db: sqlite3.Connection) -> None:
     """An agent with no barrier answers the questions whose only correct response is silence.
 
-    Nine leaks out of ten refusable questions, and the tenth is only spared because the period
-    does not exist in the corpus at all. This is the number the pgvector work later drives to
-    zero by making the rows unreadable rather than by asking the agent to behave.
+    Every refusable question leaks except one, and that one is spared only because the period
+    does not exist in the corpus at all, so there is no row to hand back. Written against the
+    count of refusable questions rather than a fixed number, because the set has changed size
+    twice and a hardcoded eight would have needed editing both times without meaning anything
+    different.
+
+    This is the number the retrieval barrier drives to zero by making the rows unreadable,
+    rather than by asking the agent to behave.
     """
     questions = golden.build(db)
     result = score(db, questions, baselines.latest_value(db, questions))
-    assert result.leaked >= 8
+    assert result.leaked == result.refusable - 1
     assert result.refusal_accuracy == 0.0
 
 
