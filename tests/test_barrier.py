@@ -99,3 +99,18 @@ def test_the_install_statements_quote_a_reason_containing_an_apostrophe(
     inserted = [line for line in statements if line.startswith("insert into holdout_window")]
     assert len(inserted) == 1
     assert "reader''s" in inserted[0]
+
+
+def test_applying_the_schema_twice_is_the_same_as_applying_it_once() -> None:
+    """Every insert is an upsert, and this is not a nicety.
+
+    The first version created the tables idempotently and inserted unconditionally, so a second
+    application failed on a primary key. A fresh container has no rows to collide with, so
+    continuous integration would have passed and the first person to see it would have been
+    whoever ran it against a database that already existed.
+    """
+    statements = barrier.install(None)
+    inserts = [line for line in statements if line.startswith("insert")]
+    assert inserts, "nothing is inserted, so this checks nothing"
+    for statement in inserts:
+        assert "on conflict" in statement, statement

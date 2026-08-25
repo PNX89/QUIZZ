@@ -130,6 +130,11 @@ def earliest_held_out_rank() -> int:
     return min((period_rank(window.from_period) for window in windows), default=1 << 30)
 
 
+def _quote(text: str) -> str:
+    """Double any apostrophe, because these reasons are prose and prose has apostrophes in it."""
+    return text.replace("'", "''")
+
+
 def install(execute: object, role: str | None = None) -> list[str]:
     """The statements that materialise this schema, returned rather than run.
 
@@ -139,18 +144,28 @@ def install(execute: object, role: str | None = None) -> list[str]:
     only one of the two stores can execute.
     """
     statements = [line for line in SCHEMA_SQL.split(";") if line.strip()]
+    # Every insert is an upsert. Applying this schema twice has to be the same as applying it
+    # once, or the second deployment fails on a primary key and the first person to see it is
+    # whoever runs it against a database that already exists. The declaration in this file
+    # wins on conflict, because this file is the source of truth and the table is a copy of it.
     for window in WINDOWS:
         statements.append(
             "insert into holdout_window (name, from_period_rank, to_period_rank, declared_on, "
             f"reason) values ('{window.name}', {period_rank(window.from_period)}, "
             f"{period_rank(window.to_period) if window.to_period else 'null'}, "
-            f"'{window.declared_on}', '{window.reason.replace(chr(39), chr(39) * 2)}')"
+            f"'{window.declared_on}', '{_quote(window.reason)}') "
+            "on conflict (name) do update set "
+            "from_period_rank = excluded.from_period_rank, "
+            "to_period_rank = excluded.to_period_rank, "
+            "declared_on = excluded.declared_on, reason = excluded.reason"
         )
     for promotion in PROMOTIONS:
         statements.append(
             "insert into promotion (holdout_name, promoted_on, promoted_by, reason) values "
             f"('{promotion.holdout_name}', '{promotion.promoted_on}', "
-            f"'{promotion.promoted_by}', '{promotion.reason.replace(chr(39), chr(39) * 2)}')"
+            f"'{promotion.promoted_by}', '{_quote(promotion.reason)}') "
+            "on conflict (holdout_name, promoted_on) do update set "
+            "promoted_by = excluded.promoted_by, reason = excluded.reason"
         )
     if role:
         statements.append(GRANT_SQL.format(role=role))
