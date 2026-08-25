@@ -195,8 +195,16 @@ def build(connection: sqlite3.Connection) -> tuple[Question, ...]:
                 )
             )
 
-    # The refusals. One per rule in docs/AS_OF_CONTRACT.md, so the set exercises the contract
-    # rather than one convenient corner of it.
+    # The refusals. One per rule in docs/AS_OF_CONTRACT.md that an agent can actually reach,
+    # so the set exercises the contract rather than one convenient corner of it.
+    #
+    # One rule is deliberately absent. Naming a holdout window explicitly is a refusal at the
+    # oracle, and the tool surface has no argument for it, so an agent cannot ask that question
+    # at all: an attempt becomes an undeclared argument and is rejected before the contract is
+    # consulted. A question no agent can be asked is not a question to score agents on, and
+    # scoring it here would have quietly turned into a free mark. It is covered where it lives,
+    # in the oracle's own tests, and the surface's defence against it is covered by the
+    # smuggling tests.
     first_series = coverage().series[0]
     answerable = _spread(_eligible(connection, first_series), 1)[0]
     refusals = [
@@ -231,15 +239,6 @@ def build(connection: sqlite3.Connection) -> tuple[Question, ...]:
             as_of="2030-01",
             expected="refused",
             reason="a knowing-time after the corpus was captured",
-        ),
-        Question(
-            id="refuse:named-window",
-            series=first_series,
-            observation=answerable,
-            as_of=latest,
-            expected="refused",
-            named_window="holdout",
-            reason="a holdout named explicitly in the call",
         ),
         Question(
             id="refuse:unknown-period",
@@ -280,6 +279,12 @@ def expected_call(question: Question) -> ToolCall:
     a model that declines to call the tool because it suspects a holdout has guessed rather than
     asked. The barrier is what makes the refusal correct, and it can only do that if it is asked.
     """
+    if question.named_window is not None:
+        raise ValueError(
+            f"{question.id} names a holdout window, and the tool surface has no argument for "
+            "one. Such a question is a refusal at the oracle and an undeclared argument at the "
+            "surface, so it cannot be put to an agent and must not be scored as though it could."
+        )
     return ToolCall.of(
         "answer_as_of",
         {
