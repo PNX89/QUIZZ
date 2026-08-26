@@ -335,6 +335,8 @@ Part of the Q...Z toolset, all of it designing for the failure that does not ann
 - QUIZZ, this one: answering what a statistic said at the time, and refusing when it cannot.
 - [QUARANTINEZ](https://github.com/PNX89/QUARANTINEZ), treating an outcome the venue never
   confirmed as terminal rather than as a retry.
+- [QUENCHZ](https://github.com/PNX89/QUENCHZ), deciding in the open what a tool server gets free
+  while it is still somebody's subprocess.
 
 <!-- toolset:end -->
 
