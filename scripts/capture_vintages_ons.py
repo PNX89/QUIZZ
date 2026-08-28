@@ -192,6 +192,52 @@ def rebasings(rows: list[Row]) -> list[dict[str, object]]:
 Row = tuple[str, str, int, str, str]
 
 
+MONTHS = {
+    "JAN": "01",
+    "FEB": "02",
+    "MAR": "03",
+    "APR": "04",
+    "MAY": "05",
+    "JUN": "06",
+    "JUL": "07",
+    "AUG": "08",
+    "SEP": "09",
+    "OCT": "10",
+    "NOV": "11",
+    "DEC": "12",
+}
+
+
+def canonical_period(raw: str) -> str:
+    """The ONS's period spelling turned into this repository's one: 2015-Q4, 1988-04.
+
+    The ONS writes "2015 Q4" and "1988 APR". Four modules here already parse "YYYY-Qn" and
+    "YYYY-MM", and normalising at the boundary keeps one format inside the repository rather
+    than teaching every parser a second dialect. A publisher's spelling is a fact about the
+    publisher, and the boundary is where it belongs.
+
+    THIS IS AN ADAPTATION OF THE DATA AND THE LICENCE PERMITS IT IN SO MANY WORDS: the Open
+    Government Licence grants the right to "adapt the Information". It is worth naming, because
+    the ECB policy this toolset relies on elsewhere permits reuse only WITHOUT modification, and
+    the identical edit under that licence would be a breach. The licence decides, not the
+    convenience.
+
+    Raises on anything it does not recognise. A period silently passed through unchanged would
+    sort wrongly against the others and quietly corrupt every as-of answer that crossed it.
+    """
+    parts = raw.split()
+    if len(parts) == 2 and parts[1].startswith("Q") and len(parts[1]) == 2:
+        return f"{parts[0]}-{parts[1]}"
+    if len(parts) == 2 and parts[1].upper() in MONTHS:
+        return f"{parts[0]}-{MONTHS[parts[1].upper()]}"
+    if len(parts) == 1 and parts[0].isdigit() and len(parts[0]) == 4:
+        return parts[0]
+    raise ValueError(
+        f"{raw!r} is a period spelling this does not recognise. Teach it rather than letting "
+        f"the value through, which would sort wrongly against every other period."
+    )
+
+
 def changes_only(rows: list[Row]) -> list[Row]:
     """The first value for each observation, and each value it changed to.
 
@@ -240,7 +286,15 @@ def main() -> int:
             last_release = released
             for point in document.get(key) or []:
                 entry = dict(point)
-                rows.append((str(entry["date"]), released, version, str(entry["value"]), title))
+                rows.append(
+                    (
+                        canonical_period(str(entry["date"])),
+                        released,
+                        version,
+                        str(entry["value"]),
+                        title,
+                    )
+                )
             time.sleep(0.15)
 
         kept = changes_only(rows)

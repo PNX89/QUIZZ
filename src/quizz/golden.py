@@ -84,7 +84,14 @@ class Question:
 
 
 def _months_before(vintage: str, months: int) -> str:
-    year, month = (int(part) for part in vintage.split("-"))
+    """A knowing-time some months before a vintage, at month granularity.
+
+    Takes only the year and month, because a vintage is a full date now: the ONS publishes a
+    numbered version on a day, and two versions can share a day. The day is irrelevant to a
+    question of the form "what was known some months earlier", and unpacking all three parts
+    into two names is what this did until the source changed.
+    """
+    year, month = (int(part) for part in vintage.split("-")[:2])
     total = year * 12 + (month - 1) - months
     return f"{total // 12}-{total % 12 + 1:02d}"
 
@@ -93,8 +100,10 @@ def _vintages(connection: sqlite3.Connection, series: str, observation: str) -> 
     return [
         str(row["vintage"])
         for row in connection.execute(
+            # Ordered by version, because a release date is not unique: this corpus holds two
+            # versions published on 2019-05-09 that disagree.
             "select vintage from observations where series = ? and observation = ? "
-            "order by vintage",
+            "order by version",
             (series, observation),
         )
     ]

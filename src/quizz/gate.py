@@ -43,25 +43,43 @@ from __future__ import annotations
 import sqlite3
 from dataclasses import dataclass
 
-from quizz.asof import Answer, NotPublished, Refused, answer_as_of
+from quizz.asof import (
+    Answer,
+    NotPublished,
+    PublishedBlank,
+    Refused,
+    Result,
+    answer_as_of,
+)
 from quizz.golden import Question
 
 #: One in a hundred. Stated once, here, rather than passed around as a magic number.
 ALPHA = 0.01
 
 
-def same_outcome(truth: Answer | NotPublished | Refused, got: object) -> bool:
+def same_outcome(truth: Result, got: object) -> bool:
     """Whether a guessed knowing-time produced the same outcome as the right one.
 
     An answer counts only when the VALUE matches, since the whole subject here is that the same
-    question has different right answers at different knowing-times. The other two outcomes have
-    nothing to compare beyond their kind.
+    question has different right answers at different knowing-times. The other outcomes have
+    nothing to compare beyond their kind, except a blank, which compares on the vintage that
+    published it: two different versions both showing nothing are not the same outcome, they are
+    two different moments at which the publisher showed nothing.
+
+    Written as an exhaustive match rather than a chain ending in a catch-all. The chain it
+    replaced ended `return isinstance(got, Refused)`, so when a fourth outcome arrived it would
+    have been silently graded as a refusal and every test would still have passed. mypy caught
+    the gap here because the signature was narrow; the catch-all would have hidden it.
     """
-    if isinstance(truth, Answer):
-        return isinstance(got, Answer) and got.value == truth.value
-    if isinstance(truth, NotPublished):
-        return isinstance(got, NotPublished)
-    return isinstance(got, Refused)
+    match truth:
+        case Answer():
+            return isinstance(got, Answer) and got.value == truth.value
+        case NotPublished():
+            return isinstance(got, NotPublished)
+        case PublishedBlank():
+            return isinstance(got, PublishedBlank) and got.vintage == truth.vintage
+        case Refused():
+            return isinstance(got, Refused)
 
 
 def null_probabilities(

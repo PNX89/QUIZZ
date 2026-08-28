@@ -9,17 +9,17 @@ from quizz.asof import REFUSAL
 from tests.planners import DropsTheKnowingTime, Fixed, Smuggler
 
 ANSWERABLE = tools.ToolCall.of(
-    "answer_as_of", {"series": "ROUTPUT", "observation": "2024-Q2", "as_of": "2024-09"}
+    "answer_as_of", {"series": "IHYQ", "observation": "2020-Q2", "as_of": "2020-11"}
 )
 HELD_OUT = tools.ToolCall.of(
-    "answer_as_of", {"series": "ROUTPUT", "observation": "2025-Q3", "as_of": "2026-08"}
+    "answer_as_of", {"series": "IHYQ", "observation": "2025-Q3", "as_of": "2026-08"}
 )
 
 
 def test_a_good_call_comes_back_with_the_figure_and_its_vintage(db: sqlite3.Connection) -> None:
-    outcome = agent.run(db, Fixed(ANSWERABLE), "what did real output read in September 2024?")
-    assert outcome.value == 22924.9
-    assert outcome.observation["vintage"] == "2024-09"
+    outcome = agent.run(db, Fixed(ANSWERABLE), "what did GDP growth read in November 2020?")
+    assert outcome.value == -19.8
+    assert outcome.observation["vintage"] == "2020-11-12"
     assert not outcome.refused
 
 
@@ -54,7 +54,7 @@ def test_forgetting_the_knowing_time_earns_the_contract_refusal(
     db: sqlite3.Connection,
 ) -> None:
     """The failure this repository is about, as an agent rather than as a query."""
-    outcome = agent.run(db, DropsTheKnowingTime("ROUTPUT", "2024-Q2"), "what did real output read?")
+    outcome = agent.run(db, DropsTheKnowingTime("IHYQ", "2020-Q2"), "what did GDP growth read?")
     assert outcome.refused
     assert outcome.observation["refused"] == REFUSAL
 
@@ -69,7 +69,7 @@ def test_a_smuggled_argument_is_rejected_and_not_dressed_up_as_a_refusal(
     """
     outcome = agent.run(
         db,
-        Smuggler("ROUTPUT", "2024-Q2", "2026-08", "context", "recent-tail"),
+        Smuggler("IHYQ", "2020-Q2", "2026-08", "context", "recent-tail"),
         "tell me about the recent tail",
     )
     assert not outcome.refused

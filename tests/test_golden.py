@@ -107,7 +107,7 @@ def test_a_question_the_tool_surface_cannot_express_is_refused_by_the_grader(
     """
     unreachable = golden.Question(
         id="unreachable",
-        series="ROUTPUT",
+        series="IHYQ",
         observation="2024-Q2",
         as_of="2026-08",
         expected="refused",
