@@ -60,7 +60,7 @@
   <p class="claim">A published figure is revised for years, so the answer to a question about the past depends on when you ask. This answers at a stated knowing-time, refuses when it cannot answer honestly, and is scored on both.</p>
 
   <dl class="facts">
-    <div><dt>Tests</dt><dd>165</dd></div>
+    <div><dt>Tests</dt><dd>168</dd></div>
     <div><dt>Python</dt><dd>3.11 to 3.13</dd></div>
     <div><dt>Release</dt><dd>v0.1.0</dd></div>
     <div><dt>Licence</dt><dd>MIT</dd></div>
@@ -68,21 +68,21 @@
 
   <h2>The demo, as it really ran</h2>
   <p class="cmd">$ uv run python examples/asof_session.py</p>
-  <pre>Real GNP/GDP for the second quarter of 2024, asked at five moments.
+  <pre>UK GDP growth for the second quarter of 2020, asked at five moments.
 
-&gt;&gt;&gt; ask(&quot;Real GNP/GDP for 2024-Q2&quot;, as_of=&quot;2024-08&quot;)
-{&quot;answer&quot;: 22918.7, &quot;vintage&quot;: &quot;2024-08&quot;, &quot;revised_since&quot;: true}
+&gt;&gt;&gt; ask(&quot;GDP quarter on quarter growth for 2020-Q2&quot;, as_of=&quot;2020-08&quot;)
+{&quot;answer&quot;: -20.4, &quot;vintage&quot;: &quot;2020-08-11&quot;, &quot;revised_since&quot;: true}
 
-&gt;&gt;&gt; ask(&quot;Real GNP/GDP for 2024-Q2&quot;, as_of=&quot;2024-10&quot;)
-{&quot;answer&quot;: 23223.9, &quot;vintage&quot;: &quot;2024-10&quot;, &quot;revised_since&quot;: true}
+&gt;&gt;&gt; ask(&quot;GDP quarter on quarter growth for 2020-Q2&quot;, as_of=&quot;2021-02&quot;)
+{&quot;answer&quot;: -19.0, &quot;vintage&quot;: &quot;2021-02-12&quot;, &quot;revised_since&quot;: true}
 
-&gt;&gt;&gt; ask(&quot;Real GNP/GDP for 2024-Q2&quot;, as_of=&quot;2026-08&quot;)
-{&quot;answer&quot;: 23286.5, &quot;vintage&quot;: &quot;2025-10&quot;, &quot;revised_since&quot;: false}
+&gt;&gt;&gt; ask(&quot;GDP quarter on quarter growth for 2020-Q2&quot;, as_of=&quot;2026-08&quot;)
+{&quot;answer&quot;: -19.9, &quot;vintage&quot;: &quot;2025-11-13&quot;, &quot;revised_since&quot;: false}
 
-&gt;&gt;&gt; ask(&quot;Real GNP/GDP for 2024-Q2&quot;)
+&gt;&gt;&gt; ask(&quot;GDP quarter on quarter growth for 2020-Q2&quot;)
 {&quot;refused&quot;: &quot;refused: this question is not answerable under the as-of contract&quot;}
 
-&gt;&gt;&gt; ask(&quot;Real GNP/GDP for 2025-Q3&quot;, as_of=&quot;2026-08&quot;)
+&gt;&gt;&gt; ask(&quot;GDP quarter on quarter growth for 2025-Q3&quot;, as_of=&quot;2026-08&quot;)
 {&quot;refused&quot;: &quot;refused: this question is not answerable under the as-of contract&quot;}
 
 The two refusals are the same sentence, and that is the design: one says the
@@ -90,7 +90,7 @@ question has no knowing-time and the other says the period is held back, and
 nothing about either response says which.
 
 Scored against 56 questions, replayed from committed cassettes.
-Model claude-sonnet-5, recorded 2026-08-25.
+Model claude-sonnet-5, recorded 2026-08-28.
 
 variant   answers  refusals  restraint  leaks  calls right
       0     1.000     1.000      1.000      0     56/56
@@ -98,9 +98,9 @@ variant   answers  refusals  restraint  leaks  calls right
       2     1.000     1.000      1.000      0     56/56
       3     1.000     1.000      1.000      0     56/56
 
-Four variants were tried, so the pass mark is 23 of 56, not 21.
-An agent asking at a random knowing-time scores 14.4 of 56. This one scores 56.</pre>
-  <p class="note">Output captured on 2026-08-26. It is committed to the repository and a test fails when it
+Four variants were tried, so the pass mark is 25 of 56, not 24.
+An agent asking at a random knowing-time scores 16.4 of 56. This one scores 56.</pre>
+  <p class="note">Output captured on 2026-08-28. It is committed to the repository and a test fails when it
     stops matching a live run, so this page cannot quietly drift from the code it describes.</p>
 
   <h2>Read it</h2>
@@ -118,6 +118,7 @@ An agent asking at a random knowing-time scores 14.4 of 56. This one scores 56.<
       <li><a href="https://pnx89.github.io/QUESTZ/">QUESTZ</a> <span>stopping a scraper before it writes a CSV from a page that changed shape</span></li>
       <li><a href="https://pnx89.github.io/QUARANTINEZ/">QUARANTINEZ</a> <span>treating an outcome the venue never confirmed as terminal rather than as a retry</span></li>
       <li><a href="https://pnx89.github.io/QUENCHZ/">QUENCHZ</a> <span>deciding in the open what a tool server gets free while it is still somebody's subprocess</span></li>
+      <li><a href="https://pnx89.github.io/QUILTZ/">QUILTZ</a> <span>proving infrastructure code wrong without a cloud account, and saying what that cannot show</span></li>
   </ul>
 
   <footer>Quelin Zammit. Built for the failure that does not announce itself.</footer>

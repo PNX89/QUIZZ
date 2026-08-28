@@ -7,38 +7,39 @@ trustworthy if it refuses the questions it cannot answer honestly, and this meas
 [![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-blue)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-![A real run: one question about real output asked at five moments, answered three different
-ways and then refused twice in the same words.](docs/demo.svg)
+![A real run: one question about UK GDP growth in the first lockdown quarter asked at five
+moments, answered three different ways and then refused twice in the same words.](docs/demo.svg)
 
 One file to start with: [`src/quizz/asof.py`](src/quizz/asof.py). It is the oracle every score
 here is measured against, and it carries the argument about what a refusal is allowed to say.
 
 ```text
->>> ask("Real GNP/GDP for 2024-Q2", as_of="2024-08")
-{"answer": 22918.7, "vintage": "2024-08", "revised_since": true}
+>>> ask("GDP quarter on quarter growth for 2020-Q2", as_of="2020-08")
+{"answer": -20.4, "vintage": "2020-08-11", "revised_since": true}
 
->>> ask("Real GNP/GDP for 2024-Q2", as_of="2024-10")
-{"answer": 23223.9, "vintage": "2024-10", "revised_since": true}
+>>> ask("GDP quarter on quarter growth for 2020-Q2", as_of="2021-02")
+{"answer": -19.0, "vintage": "2021-02-12", "revised_since": true}
 
->>> ask("Real GNP/GDP for 2024-Q2", as_of="2026-08")
-{"answer": 23286.5, "vintage": "2025-10", "revised_since": false}
+>>> ask("GDP quarter on quarter growth for 2020-Q2", as_of="2026-08")
+{"answer": -19.9, "vintage": "2025-11-13", "revised_since": false}
 
->>> ask("Real GNP/GDP for 2024-Q2")
+>>> ask("GDP quarter on quarter growth for 2020-Q2")
 {"refused": "refused: this question is not answerable under the as-of contract"}
 
->>> ask("Real GNP/GDP for 2025-Q3", as_of="2026-08")
+>>> ask("GDP quarter on quarter growth for 2025-Q3", as_of="2026-08")
 {"refused": "refused: this question is not answerable under the as-of contract"}
 ```
 
 ## Three answers to one question
 
 The first three lines are the same question about the same quarter, and all three answers are
-correct. United States real output for the second quarter of 2024 was first published at
-22918.7 in August of that year, restated to 23223.9 two months later, and restated again to
-23286.5 in the annual revision of October 2025.
+correct. UK GDP growth for the second quarter of 2020, the first lockdown, was first published
+at **-20.4 per cent** in August of that year, restated to -19.8 in November, and restated nine
+times in all: out to -21.0 and in to -19.0 before settling at -19.9.
 
-A tool that looks the number up gives the third answer to all three questions. It is wrong by
-368 billion dollars in the first case, and nothing about its response would tell you.
+A tool that looks the number up gives the last answer to all three questions. It is wrong about
+the worst quarter in modern British economic history by half a percentage point, and nothing
+about its response would tell you.
 
 The fourth and fifth lines are refusals, and they are the same sentence. One question gave no
 knowing-time. The other asked about a period that is held back. **Nothing about either response
@@ -189,8 +190,8 @@ this has.
 
 56 questions built from the corpus by stated rules rather than chosen by hand. A set can
 be entirely correct and measure nothing: fill it with questions whose answer at the knowing-time
-equals the figure published today, and a broken tool scores full marks. **24 of the 36
-answerable questions discriminate and 12 do not**, asserted as a proportion so
+equals the figure published today, and a broken tool scores full marks. **22 of the 36
+answerable questions discriminate and 14 do not**, asserted as a proportion so
 that changing the selection rules cannot erode it quietly.
 
 Two questions were removed for being unaskable. One named a holdout window explicitly, which the
@@ -215,19 +216,29 @@ a re-recording is expected to move these numbers rather than reproduce them.
 
 ## The corpus, and a source that was ruled out
 
-The figures come from the Federal Reserve Bank of Philadelphia's Real-Time Data Set for
-Macroeconomists, which publishes, for each vintage, the whole history of a series as it stood at
-that date. What is committed here is a declared extract: 1,391 rows across four series, only the
-vintages where a value changed, with the publisher, the retrieval date and both windows recorded
-beside it in `SOURCE.json`.
+The figures come from the Office for National Statistics, which publishes every series as a
+numbered version at a release date, each one the whole history as it stood that day. What is
+committed here is a declared extract: **6,289 rows across four series**, kept from 152,366 seen,
+only the versions where a value changed, with the publisher, the licence, the retrieval date and
+the attribution string recorded beside it in `SOURCE.json`.
 
-The obvious archive is ALFRED and it is ruled out by its own terms rather than by preference. The
+**Two archives were ruled out by their own terms rather than by preference.** ALFRED first: the
 FRED terms prohibit "any data mining, mirroring, robots, scraping, or similar data-gathering or
 extraction methods except as expressly allowed by the terms of use applicable to the FRED API",
 and separately prohibit use of that content "in connection with the development or training of
 any software program or system or machine learning, including, but not limited to, large language
 models". A harness for a language model reading economic data is not a grey area against that
 second clause.
+
+Then the Federal Reserve Bank of Philadelphia's Real-Time Data Set, which this corpus was built
+on until it was read properly. Their site permits use "for informational, educational, and
+research purposes only" and says that "some of the content on this website may be copyrighted".
+That is a restriction and an ambiguity, not a grant, and a public repository redistributing an
+extract is not obviously inside it. The ONS publishes under the Open Government Licence v3.0,
+which grants what is needed in its own words: "copy, publish, distribute and transmit the
+Information; adapt the Information; exploit the Information commercially and non-commercially".
+
+**Contains public sector information licensed under the Open Government Licence v3.0.**
 
 **The capture refuses to write rather than writing something wrong.** The first attempt used an
 endpoint that accepts a vintage parameter and silently ignores it: four vintages of one quarter
@@ -236,11 +247,20 @@ four knowing-times, every one carrying the latest revision, and every test passe
 nothing. The guard checks declared revision behaviour in both directions and has caught three
 things, including a date pattern of my own that matched nothing at all.
 
-The corpus carries two kinds of revision rather than one. The national accounts are restated
-because better source data arrived. A seasonally adjusted consumer price index is restated every
-February, when the seasonal factors are recalculated and several years of history move at once
-without anybody having learned anything new about the month in question. Measured over this
-extract, 475 of its recorded changes land in a February vintage.
+The corpus carries two kinds of revision rather than one. A quarter is restated because better
+source data arrived, at no fixed time. The chained volume measures are ALSO re-referenced every
+autumn in the annual Blue Book, when the reference year moves and the whole history shifts by
+very nearly a constant factor without anybody having learned anything new about any quarter in
+it. Measured over this extract, **2162 of ABMI's recorded changes land in a November vintage**.
+
+**A rebasing is not a revision, and the publisher's own metadata will not tell you which is
+which.** Comparing raw values reported that every shared point of the CPI index had changed. The
+series had been rebased from 2005=100 to 2015=100, a constant ratio to within half a per cent.
+The ONS made that change at the version released 2016-01-19 and went on printing the title
+"2005=100" until 2018-12-19, so for nearly three years the metadata named a base the numbers had
+stopped using. Rebasings are therefore computed from the ratios at capture time and recorded in
+`SOURCE.json`, never read from the title. The detector finds nine in the GDP level, almost all in
+November, and none at all in the two series that are rates and have no base to move.
 
 ## Surviving being killed
 

@@ -1,18 +1,18 @@
-Real GNP/GDP for the second quarter of 2024, asked at five moments.
+UK GDP growth for the second quarter of 2020, asked at five moments.
 
->>> ask("Real GNP/GDP for 2024-Q2", as_of="2024-08")
-{"answer": 22918.7, "vintage": "2024-08", "revised_since": true}
+>>> ask("GDP quarter on quarter growth for 2020-Q2", as_of="2020-08")
+{"answer": -20.4, "vintage": "2020-08-11", "revised_since": true}
 
->>> ask("Real GNP/GDP for 2024-Q2", as_of="2024-10")
-{"answer": 23223.9, "vintage": "2024-10", "revised_since": true}
+>>> ask("GDP quarter on quarter growth for 2020-Q2", as_of="2021-02")
+{"answer": -19.0, "vintage": "2021-02-12", "revised_since": true}
 
->>> ask("Real GNP/GDP for 2024-Q2", as_of="2026-08")
-{"answer": 23286.5, "vintage": "2025-10", "revised_since": false}
+>>> ask("GDP quarter on quarter growth for 2020-Q2", as_of="2026-08")
+{"answer": -19.9, "vintage": "2025-11-13", "revised_since": false}
 
->>> ask("Real GNP/GDP for 2024-Q2")
+>>> ask("GDP quarter on quarter growth for 2020-Q2")
 {"refused": "refused: this question is not answerable under the as-of contract"}
 
->>> ask("Real GNP/GDP for 2025-Q3", as_of="2026-08")
+>>> ask("GDP quarter on quarter growth for 2025-Q3", as_of="2026-08")
 {"refused": "refused: this question is not answerable under the as-of contract"}
 
 The two refusals are the same sentence, and that is the design: one says the
@@ -20,7 +20,7 @@ question has no knowing-time and the other says the period is held back, and
 nothing about either response says which.
 
 Scored against 56 questions, replayed from committed cassettes.
-Model claude-sonnet-5, recorded 2026-08-25.
+Model claude-sonnet-5, recorded 2026-08-28.
 
 variant   answers  refusals  restraint  leaks  calls right
       0     1.000     1.000      1.000      0     56/56
@@ -28,5 +28,5 @@ variant   answers  refusals  restraint  leaks  calls right
       2     1.000     1.000      1.000      0     56/56
       3     1.000     1.000      1.000      0     56/56
 
-Four variants were tried, so the pass mark is 23 of 56, not 21.
-An agent asking at a random knowing-time scores 14.4 of 56. This one scores 56.
+Four variants were tried, so the pass mark is 25 of 56, not 24.
+An agent asking at a random knowing-time scores 16.4 of 56. This one scores 56.
