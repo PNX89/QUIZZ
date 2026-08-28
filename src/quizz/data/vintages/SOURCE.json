@@ -6,7 +6,7 @@
   "attribution": "Contains public sector information licensed under the Open Government Licence v3.0.",
   "retrieved": "2026-08-28",
   "first_vintage": "2015-05-27",
-  "first_observation": "1955 Q1",
+  "first_observation": "1955-Q1",
   "user_agent": "QUIZZ-vintage-capture/1.0 (+https://github.com/PNX89/QUIZZ)",
   "note": "An extract, not the series. For each observation, its first published value and each value it changed to, with the vintage that changed it. The basis column carries the series title at that vintage, which is where the base year lives: a rebasing changes every value and revises none of them.",
   "series": [
@@ -21,7 +21,7 @@
       "dated_versions": 46,
       "first_vintage": "2015-05-27",
       "last_vintage": "2026-08-12",
-      "first_observation": "1955 Q2",
+      "first_observation": "1955-Q2",
       "observations": 285,
       "rows_seen": 12089,
       "distinct_bases": [
@@ -40,7 +40,7 @@
       "dated_versions": 127,
       "first_vintage": "2015-10-13",
       "last_vintage": "2026-08-17",
-      "first_observation": "1971 APR",
+      "first_observation": "1971-02",
       "observations": 664,
       "rows_seen": 76002,
       "distinct_bases": [
@@ -62,7 +62,7 @@
       "dated_versions": 46,
       "first_vintage": "2015-05-27",
       "last_vintage": "2026-08-12",
-      "first_observation": "1955 Q1",
+      "first_observation": "1955-Q1",
       "observations": 286,
       "rows_seen": 12135,
       "distinct_bases": [
@@ -154,7 +154,7 @@
       "dated_versions": 131,
       "first_vintage": "2015-10-12",
       "last_vintage": "2026-08-18",
-      "first_observation": "1988 APR",
+      "first_observation": "1988-01",
       "observations": 463,
       "rows_seen": 52140,
       "distinct_bases": [

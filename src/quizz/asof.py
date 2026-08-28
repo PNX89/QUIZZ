@@ -71,17 +71,55 @@ class Refused:
     message: str = REFUSAL
 
 
-Result = Answer | NotPublished | Refused
+@dataclass(frozen=True, slots=True)
+class PublishedBlank:
+    """The publisher showed this period, and showed nothing in it.
+
+    A third state, and the corpus holds exactly two rows of it: IHYQ and ABMI, observation
+    2018-Q4, at version 16 released 2019-05-09. Both had a value the day before and both had one
+    again at version 17, released the same afternoon.
+
+    It is not `NotPublished`, which means no row exists at or before the knowing-time and the
+    figure had not been released yet. It is not an `Answer` with a value of zero, which would be
+    a number the ONS never printed. Collapsing it into either would destroy the only records in
+    six thousand that can tell those two apart, which is the distinction this repository is
+    about.
+
+    A caller asking at month granularity will never see it, because version 17 shares the date
+    and wins the ordering. That is a real limit of asking by date, and it is stated rather than
+    hidden: to reach version 16 you have to ask for a version, and the tool surface deliberately
+    takes a knowing-TIME rather than a version number.
+    """
+
+    series: str
+    observation: str
+    as_of: str
+    vintage: str
+
+
+Result = Answer | NotPublished | PublishedBlank | Refused
 
 # The whole of the as-of rule, in the place a reader can run it. The inequality is the point:
 # the newest vintage AT OR BEFORE the knowing-time, never the newest vintage there is.
+#
+# TWO THINGS HERE ARE NOT OBVIOUS AND BOTH WERE WRONG UNTIL THE SOURCE CHANGED.
+#
+# `substr(vintage, 1, length(:as_of))` compares only as much of the vintage as the knowing-time
+# actually specifies. Vintages are full dates now, and a knowing-time may be a month. Comparing
+# the strings whole makes "2024-09" sort BEFORE "2024-09-15", so asking what was known in
+# September silently excludes everything published during September. Truncating to the asked
+# precision means a month means the whole month, which is what a person asking means.
+#
+# `order by version desc`, not by vintage. A release date is not unique: IHYQ has 45 versions
+# and 43 distinct dates, and the two published on 2019-05-09 disagree, one of them showing an
+# observation as blank. Ordering by date picks between them arbitrarily.
 _AS_OF = """
-select vintage, value
+select vintage, version, value
   from observations
  where series = :series
    and observation = :observation
-   and vintage <= :as_of
- order by vintage desc
+   and substr(vintage, 1, length(:as_of)) <= :as_of
+ order by version desc
  limit 1
 """
 
@@ -90,7 +128,7 @@ select 1
   from observations
  where series = :series
    and observation = :observation
-   and vintage > :as_of
+   and substr(vintage, 1, length(:as_of)) > :as_of
  limit 1
 """
 
@@ -105,7 +143,9 @@ def latest_vintage(connection: sqlite3.Connection) -> str:
     A knowing-time after this is refused rather than answered from the last thing on file.
     The corpus was captured on a date; it has nothing to say about the day after.
     """
-    row = connection.execute("select max(vintage) as newest from observations").fetchone()
+    row = connection.execute(
+        "select vintage as newest from observations order by version desc limit 1"
+    ).fetchone()
     newest: str = row["newest"]
     return newest
 
@@ -149,6 +189,13 @@ def answer_as_of(
     if row is None:
         return NotPublished(series=series, observation=observation, as_of=as_of)
     revised = connection.execute(_REVISED_AFTER, parameters).fetchone() is not None
+    if row["value"] is None:
+        return PublishedBlank(
+            series=series,
+            observation=observation,
+            as_of=as_of,
+            vintage=str(row["vintage"]),
+        )
     return Answer(
         series=series,
         observation=observation,

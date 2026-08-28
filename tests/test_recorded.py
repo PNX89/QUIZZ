@@ -70,8 +70,8 @@ def test_the_recorded_prompt_carries_the_series_catalogue() -> None:
     """The pilot failed without it, and a re-recording that dropped it would fail quietly."""
     first = load().exchanges[0]
     system = first.request["system"]
-    assert "ROUTPUT" in system
-    assert "PCPI" in system
+    assert "IHYQ" in system
+    assert "D7BT" in system
 
 
 @pytest.mark.parametrize("field", ["temperature", "top_p", "top_k"])
