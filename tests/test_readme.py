@@ -71,16 +71,21 @@ def test_the_readme_number_of_discriminating_questions_is_the_real_one(
             same += 1
         else:
             discriminating += 1
-    assert "**24 of the 36" in README
-    assert discriminating == 24 and same == 12, (discriminating, same)
+    assert "**22 of the 36" in README
+    assert discriminating == 22 and same == 14, (discriminating, same)
 
 
-def test_the_readme_february_count_is_the_corpus_count(db: sqlite3.Connection) -> None:
-    """NUMBER. The seasonal revision claim, counted rather than remembered."""
-    februaries = db.execute(
-        "select count(*) as n from observations where series = 'PCPI' and vintage like '%-02'"
+def test_the_readme_november_count_is_the_corpus_count(db: sqlite3.Connection) -> None:
+    """NUMBER. The annual re-referencing claim, counted rather than remembered.
+
+    It used to count February vintages, because the old corpus carried a seasonally adjusted
+    price index restated every February. The ONS series re-reference in the autumn instead, so
+    the month moved with the source rather than the claim being quietly dropped.
+    """
+    novembers = db.execute(
+        "select count(*) as n from observations where series = 'ABMI' and vintage like '%-11-%'"
     ).fetchone()["n"]
-    assert f"{februaries} of its recorded changes land in a February vintage" in README
+    assert f"{novembers} of ABMI's recorded changes land in a November vintage" in README
 
 
 def test_every_command_the_readme_shows_is_one_this_repository_runs(
