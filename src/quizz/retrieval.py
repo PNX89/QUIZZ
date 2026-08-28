@@ -97,7 +97,15 @@ def vector_literal(embedding: tuple[float, ...]) -> str:
     return "[" + ",".join(f"{value:.6f}" for value in embedding) + "]"
 
 
-_KNOWING_TIME = re.compile(r"^\d{4}-\d{2}$")
+# A month or a full date. Both are knowing-times: a caller asks "what was known in November
+# 2020" and the corpus records the day a version was released, so both shapes reach this. It
+# accepted only YYYY-MM until the ONS vintages arrived, and the failure surfaced in the services
+# suite, which needs PostgreSQL and therefore never runs on the machine the change was made on.
+#
+# ANCHORED AT BOTH ENDS AND NOTHING ELSE ALLOWED, because this value is interpolated into DDL.
+# Widening a pattern that guards an interpolation is exactly where a widening goes wrong, so the
+# day component is optional rather than the digits being loosened.
+_KNOWING_TIME = re.compile(r"^\d{4}-\d{2}(-\d{2})?$")
 
 
 def index_name(as_of: str) -> str:
@@ -113,7 +121,7 @@ def _literal_knowing_time(as_of: str) -> str:
     interpolated SQL gets written.
     """
     if not _KNOWING_TIME.match(as_of):
-        raise ValueError(f"{as_of!r} is not a knowing-time. Expected YYYY-MM.")
+        raise ValueError(f"{as_of!r} is not a knowing-time. Expected YYYY-MM or YYYY-MM-DD.")
     return f"'{as_of}'"
 
 
