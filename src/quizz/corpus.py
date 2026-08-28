@@ -6,16 +6,27 @@ comparison, and a loop with a comparison is a thing a reader has to trust. Writt
 a query somebody can read, run against the same data by hand, and disagree with. This repository
 scores a language model against this oracle, so the oracle has to be the part nobody argues about.
 
-WHY IT IS BUILT IN MEMORY EVERY TIME. The corpus is 1,391 rows. Loading it costs milliseconds,
+WHY IT IS BUILT IN MEMORY EVERY TIME. The corpus is 6,289 rows. Loading it costs milliseconds,
 and the alternative, a checked-in database file, is a binary artefact that can silently disagree
 with the CSVs beside it. The CSVs are the source of truth and the database is derived, which is
 the same rule the rest of this toolset applies to generated files.
 
-WHAT A ROW MEANS. `(series, observation, vintage, value)` says: from vintage `vintage` onward,
-the published value for period `observation` was `value`. Only changes are stored, so an
+WHAT A ROW MEANS. `(series, observation, vintage, version, value)` says: from that version
+onward, the published value for period `observation` was `value`. Only changes are stored, so an
 observation with three rows was restated twice. An observation with no row at or before a
 knowing-time had not been published yet at that time, and that absence is an answer of its own
 rather than a gap in the data.
+
+THE KEY IS THE VERSION, NOT THE DATE, and that is a correction rather than a preference. The ONS
+publishes a numbered version at a release date, and two versions can share a date: IHYQ has 45
+previous versions and 43 distinct dates. Keying on the date merges two publications and picks a
+winner silently. An as-of question therefore resolves to the LAST version at or before the
+knowing-time.
+
+AND `value` IS NULLABLE. At version 16 of IHYQ, released 2019-05-09, the observation `2018 Q4`
+was published as an empty string; it had been 0.2 since February and was 0.2 again at version 17,
+released the same day. Published-as-nothing is a third state beside a number and an absence, and
+it is the only record in the corpus that distinguishes them.
 """
 
 from __future__ import annotations
@@ -38,8 +49,9 @@ create table observations (
     series      text not null references series(name),
     observation text not null,
     vintage     text not null,
-    value       real not null,
-    primary key (series, observation, vintage)
+    version     integer not null,
+    value       real,
+    primary key (series, observation, version)
 ) without rowid;
 """
 
@@ -112,7 +124,24 @@ def _load(connection: sqlite3.Connection) -> None:
                 f"{len(rows)}. One of them was edited by hand."
             )
         connection.executemany(
-            "insert into observations (series, observation, vintage, value) values (?, ?, ?, ?)",
-            [(entry["name"], r["observation"], r["vintage"], float(r["value"])) for r in rows],
+            "insert into observations (series, observation, vintage, version, value) "
+            "values (?, ?, ?, ?, ?)",
+            [
+                (
+                    entry["name"],
+                    r["observation"],
+                    r["vintage"],
+                    int(r["version"]),
+                    # NULL rather than a number, and rather than a dropped row. The ONS
+                    # published IHYQ 2018 Q4 as an empty string at version 16, having shown 0.2
+                    # since February and showing 0.2 again at version 17 the same afternoon.
+                    # That is a third state beside a value and an absence: published, as
+                    # nothing. Dropping the row would make it indistinguishable from not yet
+                    # published, and it is the only record in six thousand that can tell them
+                    # apart.
+                    float(r["value"]) if r["value"].strip() else None,
+                )
+                for r in rows
+            ],
         )
     connection.commit()

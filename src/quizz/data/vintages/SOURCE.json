@@ -1,52 +1,177 @@
 {
-  "publisher": "Federal Reserve Bank of Philadelphia, Real-Time Data Set for Macroeconomists",
-  "publisher_url": "https://www.philadelphiafed.org/surveys-and-data/real-time-data-research",
-  "retrieved": "2026-08-25",
-  "first_vintage": "2019-01",
-  "first_observation": "2015-01",
-  "note": "An extract, not the data set. Only the windows above, and within them only the vintages where a value changed. Go to the publisher for the whole of it.",
+  "publisher": "Office for National Statistics",
+  "publisher_url": "https://www.ons.gov.uk",
+  "licence": "Open Government Licence v3.0",
+  "licence_url": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
+  "attribution": "Contains public sector information licensed under the Open Government Licence v3.0.",
+  "retrieved": "2026-08-28",
+  "first_vintage": "2015-05-27",
+  "first_observation": "1955 Q1",
+  "user_agent": "QUIZZ-vintage-capture/1.0 (+https://github.com/PNX89/QUIZZ)",
+  "note": "An extract, not the series. For each observation, its first published value and each value it changed to, with the vintage that changed it. The basis column carries the series title at that vintage, which is where the base year lives: a rebasing changes every value and revises none of them.",
   "series": [
     {
-      "name": "ROUTPUT",
-      "label": "Real GNP/GDP",
-      "units": "billions of chained dollars, seasonally adjusted",
-      "url": "https://www.philadelphiafed.org/-/media/FRBP/Assets/Surveys-And-Data/real-time-data/data-files/xlsx/routputMvQd.xlsx?sc_lang=en&hash=B3AD0AED9E268AA077E8D9B8AAF2AC83",
+      "name": "IHYQ",
+      "label": "Gross Domestic Product: quarter on quarter growth",
+      "units": "per cent, chained volume measure, seasonally adjusted",
       "revisable": true,
-      "rows": 263,
-      "observations": 46,
-      "vintages": 89,
-      "releases_url": "https://www.philadelphiafed.org/-/media/FRBP/Assets/Surveys-And-Data/real-time-data/data-files/xlsx/routput_first_second_third.xlsx?sc_lang=en&hash=AB8BB59BBBF6840DE1448851E90D7A80",
-      "release_rows": 42
+      "rows": 1248,
+      "url": "https://www.ons.gov.uk/economy/grossdomesticproductgdp/timeseries/ihyq/pn2",
+      "why": "GDP quarter on quarter growth. A rate, so it has no base to move: every difference between two vintages is a genuine revision. The headline series.",
+      "dated_versions": 46,
+      "first_vintage": "2015-05-27",
+      "last_vintage": "2026-08-12",
+      "first_observation": "1955 Q2",
+      "observations": 285,
+      "rows_seen": 12089,
+      "distinct_bases": [
+        "Gross Domestic Product: Quarter on Quarter growth: CVM SA %"
+      ],
+      "rebasings": []
     },
     {
-      "name": "NOUTPUT",
-      "label": "Nominal GNP/GDP",
-      "units": "billions of dollars, seasonally adjusted",
-      "url": "https://www.philadelphiafed.org/-/media/FRBP/Assets/Surveys-And-Data/real-time-data/data-files/xlsx/noutputMvQd.xlsx?sc_lang=en&hash=9A20CEF072FD750998CD62A38E6A8232",
+      "name": "MGSX",
+      "label": "Unemployment rate, aged 16 and over",
+      "units": "per cent, seasonally adjusted",
       "revisable": true,
-      "rows": 263,
-      "observations": 46,
-      "vintages": 89
+      "rows": 874,
+      "url": "https://www.ons.gov.uk/employmentandlabourmarket/peoplenotinwork/unemployment/timeseries/mgsx/lms",
+      "why": "Unemployment rate. Also a rate, and revised far less often than GDP, which makes it the control: a corpus where everything moves cannot show that an agent knows when something did not.",
+      "dated_versions": 127,
+      "first_vintage": "2015-10-13",
+      "last_vintage": "2026-08-17",
+      "first_observation": "1971 APR",
+      "observations": 664,
+      "rows_seen": 76002,
+      "distinct_bases": [
+        "LFS: Unemployment rate: UK: All: Aged 16 and over: %: SA",
+        "Unemployment rate",
+        "Unemployment rate (aged 16 and over, seasonally adjusted)",
+        "Unemployment rate (aged 16 and over, seasonally adjusted): %"
+      ],
+      "rebasings": []
     },
     {
-      "name": "P",
-      "label": "GDP price index",
-      "units": "index, seasonally adjusted",
-      "url": "https://www.philadelphiafed.org/-/media/FRBP/Assets/Surveys-And-Data/real-time-data/data-files/xlsx/pMvQd.xlsx?sc_lang=en&hash=A9B06A9E6E7E92CA131A04BD5AE6856D",
+      "name": "ABMI",
+      "label": "Gross Domestic Product: chained volume measure",
+      "units": "millions of pounds, seasonally adjusted",
       "revisable": true,
-      "rows": 261,
-      "observations": 46,
-      "vintages": 88
+      "rows": 3342,
+      "url": "https://www.ons.gov.uk/economy/grossdomesticproductgdp/timeseries/abmi/pn2",
+      "why": "Real GDP as a level, in chained volume measures. Re-referenced over the period, so almost every value differs from its first published form without most of them having been revised. Here to be told apart from IHYQ.",
+      "dated_versions": 46,
+      "first_vintage": "2015-05-27",
+      "last_vintage": "2026-08-12",
+      "first_observation": "1955 Q1",
+      "observations": 286,
+      "rows_seen": 12135,
+      "distinct_bases": [
+        "Gross Domestic Product: chained volume measures: Seasonally adjusted \u00a3m"
+      ],
+      "rebasings": [
+        {
+          "vintage": "2015-05-27",
+          "version": 2,
+          "previous_vintage": "2015-05-27",
+          "median_ratio": 1.017945,
+          "spread": 0.017829,
+          "observations_compared": 241
+        },
+        {
+          "vintage": "2016-08-25",
+          "version": 5,
+          "previous_vintage": "2016-05-26",
+          "median_ratio": 1.031779,
+          "spread": 0.014112,
+          "observations_compared": 245
+        },
+        {
+          "vintage": "2017-11-23",
+          "version": 10,
+          "previous_vintage": "2017-08-23",
+          "median_ratio": 1.02526,
+          "spread": 0.01225,
+          "observations_compared": 250
+        },
+        {
+          "vintage": "2018-08-09",
+          "version": 13,
+          "previous_vintage": "2018-05-24",
+          "median_ratio": 1.01403,
+          "spread": 0.012722,
+          "observations_compared": 253
+        },
+        {
+          "vintage": "2019-11-11",
+          "version": 19,
+          "previous_vintage": "2019-08-08",
+          "median_ratio": 1.010664,
+          "spread": 0.011265,
+          "observations_compared": 258
+        },
+        {
+          "vintage": "2020-11-12",
+          "version": 23,
+          "previous_vintage": "2020-08-11",
+          "median_ratio": 1.039101,
+          "spread": 0.015965,
+          "observations_compared": 262
+        },
+        {
+          "vintage": "2021-11-11",
+          "version": 27,
+          "previous_vintage": "2021-08-11",
+          "median_ratio": 1.050187,
+          "spread": 0.033412,
+          "observations_compared": 266
+        },
+        {
+          "vintage": "2024-11-15",
+          "version": 39,
+          "previous_vintage": "2024-08-14",
+          "median_ratio": 1.107816,
+          "spread": 0.008642,
+          "observations_compared": 278
+        },
+        {
+          "vintage": "2025-11-13",
+          "version": 43,
+          "previous_vintage": "2025-08-13",
+          "median_ratio": 1.077961,
+          "spread": 0.014407,
+          "observations_compared": 282
+        }
+      ]
     },
     {
-      "name": "PCPI",
-      "label": "Consumer price index, seasonally adjusted",
-      "units": "index, 1982 to 1984 equals 100",
-      "url": "https://www.philadelphiafed.org/-/media/FRBP/Assets/Surveys-And-Data/real-time-data/data-files/xlsx/pcpiMvMd.xlsx?sc_lang=en&hash=E41A743DC6423F950B10C3DE7A4F674D",
+      "name": "D7BT",
+      "label": "Consumer prices index: all items",
+      "units": "index, and the base year is in the basis column because it moved",
       "revisable": true,
-      "rows": 604,
-      "observations": 137,
-      "vintages": 90
+      "rows": 825,
+      "url": "https://www.ons.gov.uk/economy/inflationandpriceindices/timeseries/d7bt/mm23",
+      "why": "CPI index. Rebased from 2005=100 to 2015=100 inside the window, which is the cleanest example in the corpus of a change that looks like a revision and is not.",
+      "dated_versions": 131,
+      "first_vintage": "2015-10-12",
+      "last_vintage": "2026-08-18",
+      "first_observation": "1988 APR",
+      "observations": 463,
+      "rows_seen": 52140,
+      "distinct_bases": [
+        "CPI All Items Index: Estimated pre-97 2005=100",
+        "CPI All Items Index: Estimated pre-97 2015=100",
+        "CPI INDEX 00: ALL ITEMS 2015=100"
+      ],
+      "rebasings": [
+        {
+          "vintage": "2016-01-19",
+          "version": 4,
+          "previous_vintage": "2016-01-19",
+          "median_ratio": 0.7811,
+          "spread": 0.002789,
+          "observations_compared": 336
+        }
+      ]
     }
   ]
 }
