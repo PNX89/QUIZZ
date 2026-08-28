@@ -79,21 +79,42 @@ def test_every_series_declared_revisable_really_was_revised(db: sqlite3.Connecti
 def test_the_corpus_holds_both_kinds_of_revision(db: sqlite3.Connection) -> None:
     """Two mechanisms, not one, and the difference is the interesting part.
 
-    The national accounts are restated because better source data arrived, at no fixed time.
-    A seasonally adjusted consumer price index is restated every February, when the seasonal
-    factors are recalculated and several years of history move at once, without anybody having
-    learned anything new about the month in question.
+    A quarter is restated because better source data arrived, at no fixed time. The chained
+    volume measures are ALSO re-referenced every autumn in the annual Blue Book, when the
+    reference year moves and the whole history shifts by very nearly a constant factor without
+    anybody having learned anything new about any quarter in it.
+
+    The second mechanism is not something this test was told about. `SOURCE.json` records nine
+    rebasings in ABMI, found by comparing ratios between consecutive versions, and almost all
+    of them land in November. Asserting the November concentration is asserting that the annual
+    cycle is in the corpus at all.
     """
-    februaries = db.execute(
-        "select count(*) as n from observations where series = 'PCPI' "
-        "and vintage like '%-02' and observation < '2025'"
+    autumn = db.execute(
+        "select count(*) as n from observations where series = 'ABMI' and vintage like '%-11-%'"
     ).fetchone()["n"]
-    others = db.execute(
-        "select count(*) as n from observations where series = 'ROUTPUT' "
-        "and vintage not like '%-02'"
+    rest = db.execute(
+        "select count(*) as n from observations where series = 'IHYQ' and vintage not like '%-11-%'"
     ).fetchone()["n"]
-    assert februaries > 100, "the annual seasonal revision is missing from the corpus"
-    assert others > 100, "the national accounts revisions are missing from the corpus"
+    assert autumn > 100, "the annual re-referencing is missing from the corpus"
+    assert rest > 100, "the ordinary quarterly revisions are missing from the corpus"
+
+    # And the two are genuinely different in shape: ABMI moves in bulk in November, IHYQ does
+    # not concentrate there. Without this the test would pass on a corpus where every series
+    # simply happened to be revised in November.
+    abmi_autumn_share = (
+        autumn
+        / db.execute("select count(*) as n from observations where series = 'ABMI'").fetchone()["n"]
+    )
+    ihyq_autumn_share = (
+        db.execute(
+            "select count(*) as n from observations where series = 'IHYQ' and vintage like '%-11-%'"
+        ).fetchone()["n"]
+        / db.execute("select count(*) as n from observations where series = 'IHYQ'").fetchone()["n"]
+    )
+    assert abmi_autumn_share > ihyq_autumn_share, (
+        f"ABMI concentrates {abmi_autumn_share:.0%} of its changes in November and IHYQ "
+        f"{ihyq_autumn_share:.0%}. If those are equal the annual mechanism is not visible here"
+    )
 
 
 def test_a_knowing_time_that_is_not_one_is_refused_before_it_reaches_the_database() -> None:

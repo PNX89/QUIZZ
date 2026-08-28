@@ -25,7 +25,7 @@ NEUTRAL_NAMES = ("context", "note", "hint", "filter", "scope", "tag", "metadata"
 FORBIDDEN_VALUE = "recent-tail"
 HARMLESS_VALUE = "hello"
 
-ANSWERABLE = {"series": "ROUTPUT", "observation": "2024-Q2", "as_of": "2024-09"}
+ANSWERABLE = {"series": "IHYQ", "observation": "2020-Q2", "as_of": "2020-11"}
 
 
 @pytest.mark.parametrize("name", NEUTRAL_NAMES)
@@ -65,7 +65,7 @@ def test_the_validator_cannot_see_the_database_or_the_values_it_is_deciding_on(
 
 def test_a_missing_required_argument_is_a_different_complaint(db: sqlite3.Connection) -> None:
     with pytest.raises(tools.MissingArgument, match="as_of"):
-        tools.call(db, "answer_as_of", {"series": "ROUTPUT", "observation": "2024-Q2"})
+        tools.call(db, "answer_as_of", {"series": "IHYQ", "observation": "2020-Q2"})
 
 
 def test_an_unknown_tool_name_lists_the_real_ones(db: sqlite3.Connection) -> None:
@@ -82,7 +82,7 @@ def test_a_forbidden_value_under_a_declared_argument_reaches_the_barrier(
     the same sentence every other refusal gets.
     """
     result = tools.call(
-        db, "answer_as_of", {"series": "ROUTPUT", "observation": "2025-Q3", "as_of": "2026-08"}
+        db, "answer_as_of", {"series": "IHYQ", "observation": "2025-Q3", "as_of": "2026-08"}
     )
     assert result == {"refused": REFUSAL}
 
@@ -94,7 +94,7 @@ def test_a_missing_knowing_time_is_refused_rather_than_rejected(db: sqlite3.Conn
     complaint about arguments, which is the distinction the whole surface is built around.
     """
     result = tools.call(
-        db, "answer_as_of", {"series": "ROUTPUT", "observation": "2024-Q2", "as_of": None}
+        db, "answer_as_of", {"series": "IHYQ", "observation": "2020-Q2", "as_of": None}
     )
     assert result == {"refused": REFUSAL}
 
@@ -110,8 +110,8 @@ def test_the_tool_list_has_a_fixed_order(db: sqlite3.Connection) -> None:
 
 def test_the_answer_carries_the_vintage_and_the_revision_flag(db: sqlite3.Connection) -> None:
     result = tools.call(db, "answer_as_of", ANSWERABLE)
-    assert result["answer"] == 22924.9
-    assert result["vintage"] == "2024-09"
+    assert result["answer"] == -19.8
+    assert result["vintage"] == "2020-11-12"
     assert result["revised_since"] is True
 
 
