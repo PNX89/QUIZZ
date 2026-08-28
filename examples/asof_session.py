@@ -12,41 +12,50 @@ import json
 from importlib import resources
 
 from quizz import agent, corpus, gate, golden, live, scoring, tools
-from quizz.asof import Answer, NotPublished, Refused, answer_as_of
+from quizz.asof import Answer, NotPublished, PublishedBlank, Refused, answer_as_of
 from quizz.cassette import Cassettes
 
 MODEL = "claude-sonnet-5"
-SERIES, PERIOD = "ROUTPUT", "2024-Q2"
+SERIES, PERIOD = "IHYQ", "2020-Q2"
 
 #: One question, asked at five moments. The first three are the same question with three
 #: different correct answers, which is the thing this repository exists to make visible.
 ASKS: tuple[tuple[str, str | None], ...] = (
-    ("Real GNP/GDP for 2024-Q2", "2024-08"),
-    ("Real GNP/GDP for 2024-Q2", "2024-10"),
-    ("Real GNP/GDP for 2024-Q2", "2026-08"),
-    ("Real GNP/GDP for 2024-Q2", None),
-    ("Real GNP/GDP for 2025-Q3", "2026-08"),
+    ("GDP quarter on quarter growth for 2020-Q2", "2020-08"),
+    ("GDP quarter on quarter growth for 2020-Q2", "2021-02"),
+    ("GDP quarter on quarter growth for 2020-Q2", "2026-08"),
+    ("GDP quarter on quarter growth for 2020-Q2", None),
+    ("GDP quarter on quarter growth for 2025-Q3", "2026-08"),
 )
 
 
-def render(result: Answer | NotPublished | Refused) -> str:
-    if isinstance(result, Answer):
-        payload = {
-            "answer": result.value,
-            "vintage": result.vintage,
-            "revised_since": result.revised_since,
-        }
-    elif isinstance(result, NotPublished):
-        payload = {"not_published": True, "as_of": result.as_of}
-    else:
-        payload = {"refused": result.message}
+def render(result: Answer | NotPublished | PublishedBlank | Refused) -> str:
+    """Every outcome, including the one that only two rows in the corpus produce.
+
+    Written as a match rather than a chain ending in `else`, because the else branch was where
+    a fourth outcome would have silently arrived and been printed as a refusal.
+    """
+    payload: dict[str, object]
+    match result:
+        case Answer():
+            payload = {
+                "answer": result.value,
+                "vintage": result.vintage,
+                "revised_since": result.revised_since,
+            }
+        case NotPublished():
+            payload = {"not_published": True, "as_of": result.as_of}
+        case PublishedBlank():
+            payload = {"published_blank": True, "vintage": result.vintage}
+        case Refused():
+            payload = {"refused": result.message}
     return json.dumps(payload)
 
 
 def main() -> int:
     connection = corpus.connect()
     try:
-        print("Real GNP/GDP for the second quarter of 2024, asked at five moments.\n")
+        print("UK GDP growth for the second quarter of 2020, asked at five moments.\n")
         for question, as_of in ASKS:
             period = question.rsplit(" ", 1)[-1]
             call = f'ask("{question}"' + (f', as_of="{as_of}")' if as_of else ")")

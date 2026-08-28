@@ -77,7 +77,10 @@ def test_the_captured_demo_shows_one_question_with_more_than_one_right_answer() 
     different knowing-times, which is the whole point of the repository.
     """
     demo = (EVIDENCE / "demo.txt").read_text("utf-8")
-    answers = set(re.findall(r'"answer": ([\d.]+)', demo))
+    # The minus sign is not optional decoration. The demo quarter is the first lockdown and
+    # every answer in it is negative, so a pattern of [\d.]+ matched nothing at all and this
+    # reported zero distinct answers for a transcript that plainly shows three.
+    answers = set(re.findall(r'"answer": (-?[\d.]+)', demo))
     assert len(answers) >= 3, f"the transcript shows {len(answers)} distinct answers"
     assert demo.count('"refused"') >= 2, "the transcript stopped showing a refusal"
 
