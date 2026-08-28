@@ -127,7 +127,27 @@ def test_a_knowing_time_that_is_not_one_is_refused_before_it_reaches_the_databas
     """
     from quizz import retrieval
 
+    # Both shapes are knowing-times. A caller asks about a month; a vintage is the day a version
+    # was released. `2024-09-01` was in the refused list until 28-8-2026, when the corpus moved
+    # to a source that publishes on days rather than in months, and the guard that caught it was
+    # a suite needing PostgreSQL which never runs on the machine the change was made on.
     assert retrieval._literal_knowing_time("2024-09") == "'2024-09'"
-    for bad in ("2024-9", "2024-09-01", "'; drop table notes; --", "", "20240900"):
+    assert retrieval._literal_knowing_time("2015-10-12") == "'2015-10-12'"
+
+    # Widening a pattern that guards an interpolation is exactly where a widening goes wrong, so
+    # the refused list is longer than it was rather than shorter. Each case separately, so a
+    # pattern that started accepting one of them names which.
+    for bad in (
+        "2024-9",
+        "2024-09-1",
+        "2024-09-012",
+        "2024-09-01-02",
+        "'; drop table notes; --",
+        "2024-09-01; drop table notes",
+        "2024-09'",
+        "",
+        "20240900",
+        "2024",
+    ):
         with pytest.raises(ValueError, match="not a knowing-time"):
             retrieval._literal_knowing_time(bad)
