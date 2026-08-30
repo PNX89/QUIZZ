@@ -56,7 +56,7 @@ Four prompt variants were recorded against `claude-sonnet-5` on 25 August 2026 a
 | 2 | 1.000 | 1.000 | 1.000 | 0 | 56 of 56 |
 | 3 | 1.000 | 1.000 | 1.000 | 0 | 56 of 56 |
 
-**Four variants were tried, so the pass mark is 23 of 56 rather than 21.** Try enough phrasings
+**Four variants were tried, so the pass mark is 25 of 56, not 24.** Try enough phrasings
 and keep the best, and the number you report is the maximum of several draws rather than one.
 The threshold rises with the number tried, and the arithmetic is in
 [`src/quizz/gate.py`](src/quizz/gate.py).
@@ -72,7 +72,7 @@ being measured is whether an agent passes the right knowing-time to a tool, and 
 questions this one does, every time.
 
 An agent that calls the same tool with a knowing-time picked at random from the declared ones
-scores 14.4 of 56, so the questions are not free. They are also not hard for anything that reads
+scores 16.4 of 56, so the questions are not free. They are also not hard for anything that reads
 the question properly, and that is worth saying plainly rather than presenting four rows of
 1.000 as though they were a discovery.
 

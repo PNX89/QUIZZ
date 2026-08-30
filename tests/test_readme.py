@@ -207,3 +207,58 @@ def test_the_evidence_facts_agree_with_the_readme_badges() -> None:
     low, high = str(facts["python"]).split(" to ")
     assert f"python-{low}" in README
     assert high.replace(".", "%2E") in README or high in README
+
+
+def test_every_gate_figure_on_the_page_is_the_one_the_demo_printed() -> None:
+    """The page said 23, 21 and 14.4. Its own committed demo said 25, 24 and 16.4.
+
+    THIS IS THE DEFECT THE WHOLE REPOSITORY IS ABOUT, in the repository. QUIZZ exists to answer a
+    question as of a knowing-time rather than as of now, because a number that was true when it
+    was written and is false now is the failure mode that costs people money. Three of its own
+    headline figures were exactly that: computed once, typed into prose, and left there while the
+    thing that produces them moved.
+
+    A reader who runs the demo, as the page invites them to, sees a different number from the one
+    the sentence beside the invitation gives. That is worse than a missing figure, because it
+    reads as evidence until somebody checks it, and this page is written for people who check.
+
+    Asserted against the CAPTURED OUTPUT rather than recomputed here. Recomputing would make this
+    test agree with the code and say nothing about the page, which is the same mistake one layer
+    up: the thing being checked is that the PROSE matches the ARTEFACT a reader is handed.
+    """
+    captured = (EVIDENCE / "demo.txt").read_text("utf-8")
+    # Emphasis stripped and whitespace flattened, so the comparison is about the figures rather
+    # than about where the line wrapped or which half is bold.
+    prose = " ".join(README.replace("**", "").split())
+
+    # THE PAIRS ARE (what the demo prints, what the page says), each with the figure captured, and
+    # the test is that the two figures AGREE. Two earlier versions of this got it wrong in
+    # opposite directions, and both mistakes are worth keeping written down:
+    #
+    #   searching the whole page for the digit    too weak, a long page contains any digit
+    #                                             somewhere, and the wrong sentence stayed green
+    #   requiring the sentences to match verbatim too strong, the page legitimately rephrases the
+    #                                             baseline claim in its own words
+    #
+    # Comparing the figures in the corresponding sentences is the assertion that was actually
+    # wanted: the page may say it however it likes, and it may not say a different number.
+    pairs = [
+        (r"pass mark is (\d+) of 56", r"pass mark is (\d+) of 56", "the trial-corrected pass mark"),
+        (
+            r"random knowing-time scores (\d+\.\d+) of 56",
+            r"scores (\d+\.\d+) of 56",
+            "the random baseline",
+        ),
+    ]
+    for demo_pattern, page_pattern, what in pairs:
+        printed = re.search(demo_pattern, captured)
+        assert printed is not None, (
+            f"the demo no longer prints {what}, so this test cannot tell whether the page agrees"
+        )
+        written = re.search(page_pattern, prose)
+        assert written is not None, f"the README no longer states {what}"
+        assert written.group(1) == printed.group(1), (
+            f"the demo prints {printed.group(1)} for {what} and the page says "
+            f"{written.group(1)}. The page and its own evidence file disagree about a headline "
+            f"figure, which is the defect this repository exists to detect"
+        )
