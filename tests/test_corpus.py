@@ -151,11 +151,10 @@ def test_ihyqs_version_and_date_counts_are_what_three_documents_claim(
     """
     by_version = {
         row["version"]: row["vintage"]
-        for row in db.execute(
-            "select version, vintage from observations where series = 'IHYQ'"
-        )
+        for row in db.execute("select version, vintage from observations where series = 'IHYQ'")
     }
-    previous = {version: vintage for version, vintage in by_version.items() if version != max(by_version)}
+    newest = max(by_version)
+    previous = {version: vintage for version, vintage in by_version.items() if version != newest}
     assert len(previous) == 45, f"IHYQ has {len(previous)} versions before the newest, not 45"
     distinct_dates = len(set(previous.values()))
     assert distinct_dates == 43, f"those versions cover {distinct_dates} distinct dates, not 43"
@@ -191,7 +190,9 @@ def test_the_capture_scripts_docstring_states_the_rebasing_it_describes() -> Non
     every time it runs, so the docstring is checked against the number the detector itself
     recorded rather than a manual recount that used a different pair of vintages.
     """
-    d7bt = next(entry for entry in source()["series"] if entry["name"] == "D7BT")
+    entries = source()["series"]
+    assert isinstance(entries, list)
+    d7bt = next(entry for entry in entries if entry["name"] == "D7BT")
     compared = d7bt["rebasings"][0]["observations_compared"]
     text = (REPO / "scripts" / "capture_vintages_ons.py").read_text("utf-8")
     assert f"all {compared} shared points" in text, (
