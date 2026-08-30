@@ -28,10 +28,14 @@ recent period return the same opaque sentence.
 5. A holdout was named explicitly in the call.
 6. The period is not one this corpus holds at all.
 
-The corpus windows are in `src/quizz/data/vintages/SOURCE.json`. The holdout boundary is one
-constant, `HOLDOUT_FROM` in `src/quizz/asof.py`. An unknown **series** name is not on this list:
-it raises, because the series are published in the same metadata file and a typo in a public name
-is a caller's mistake rather than an attempt on the barrier.
+The corpus windows are in `src/quizz/data/vintages/SOURCE.json`. The holdout boundary is declared
+data rather than a number in the source: the rows of `WINDOWS` in `src/quizz/barrier.py`, each
+carrying the date it was declared and the reason it was, and a release recorded as a `PROMOTIONS`
+row referring to the window rather than as a deletion of it. A boundary written as a constant is
+one somebody can move in a commit that looks like every other commit; a declared row that has to
+be promoted to be released leaves a record of who moved it and why. An unknown **series** name is
+not on this list: it raises, because the series are published in the same metadata file and a typo
+in a public name is a caller's mistake rather than an attempt on the barrier.
 
 ## Why one sentence for six rules
 

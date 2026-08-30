@@ -75,12 +75,29 @@ def test_a_closed_window_refuses_to_produce_an_index_predicate(
 
 
 def test_the_schema_names_both_tables_and_the_grant_names_only_the_documents() -> None:
-    """The role-scoped grant is a claim about what it does NOT include."""
+    """The role-scoped grant is a claim about what it does NOT include.
+
+    Asserted as the whole statement rather than as a list of absences. Checking that the two
+    table names do not appear is satisfied by a grant on every table in the schema, which is
+    the precise opposite of what this is meant to prove, and counting the word grant is
+    satisfied by anything carrying one verb.
+    """
     assert "holdout_window" in barrier.SCHEMA_SQL
     assert "promotion" in barrier.SCHEMA_SQL
-    assert barrier.GRANT_SQL.count("grant") == 1
-    assert "holdout_window" not in barrier.GRANT_SQL
-    assert "promotion" not in barrier.GRANT_SQL
+    assert barrier.GRANT_SQL.format(role="retriever") == "grant select on notes to retriever"
+
+
+def test_naming_a_role_appends_that_one_grant_and_changes_nothing_else() -> None:
+    """The constant is what a deployment runs, which it was not until retrieval called this.
+
+    `retrieval.bootstrap` wrote its own copy of the statement and passed no role, so the branch
+    below was dead and the constant was formatted nowhere. It could be widened to every table
+    in the schema and both suites stayed green.
+    """
+    without = barrier.install(None)
+    with_role = barrier.install(None, role="retriever")
+    assert with_role[: len(without)] == without
+    assert with_role[len(without) :] == ["grant select on notes to retriever"]
 
 
 def test_the_install_statements_quote_a_reason_containing_an_apostrophe(

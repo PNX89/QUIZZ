@@ -14,6 +14,8 @@ the difference between the two constructions visible at all.
 from __future__ import annotations
 
 import os
+import pathlib
+import re
 from collections.abc import Iterator
 
 import psycopg
@@ -26,6 +28,15 @@ pytestmark = pytest.mark.services
 
 DSN = os.environ.get("QUIZZ_POSTGRES_URL", "postgresql://quizz:quizz@127.0.0.1:5433/quizz")
 HOLDOUT_RANK = earliest_held_out_rank()
+REPO = pathlib.Path(__file__).resolve().parent.parent
+RECORD = REPO / "docs" / "adr" / "0004-two-mechanisms-for-one-barrier.md"
+
+#: A plan count as a document quotes it. Whitespace is flattened first, because the module
+#: docstring wraps the phrase across two lines and the page does not.
+QUOTED_COUNT = re.compile(r"Rows Removed by Filter: (\d+)")
+
+#: A row of the measurement table in ADR 0004, as construction and forbidden rows visited.
+MEASURED_ROW = re.compile(r"\| (a [^|]+?|row level security alone) \| \*\*(\d+)\*\*")
 
 
 @pytest.fixture(scope="module")
@@ -135,6 +146,87 @@ def test_the_covering_index_visits_none_of_them(
     # passed for a while by luck.
     assert plan.index is not None and plan.index.startswith("notes_hnsw_asof_"), plan.text
     assert plan.rows_removed_by_filter == 0, plan.text
+
+
+def _forbidden_rows_visited(
+    cursor: psycopg.Cursor[tuple[object, ...]],
+    query: str,
+    params: tuple[object, ...],
+) -> int:
+    # `set` takes no bind parameters, which is why every one of these is interpolated here and
+    # everywhere else in this file.
+    cursor.execute(f"set {retrieval.AS_OF_SETTING} = '{LATE_KNOWING_TIME}'")
+    cursor.execute(f"set {retrieval.HOLDOUT_SETTING} = '{HOLDOUT_RANK}'")
+    cursor.execute("set hnsw.ef_search = 40")
+    return retrieval.explain(cursor, query, params).rows_removed_by_filter
+
+
+def test_the_plan_count_the_documents_quote_is_the_one_this_query_produces(
+    as_retriever: psycopg.Connection[tuple[object, ...]],
+) -> None:
+    """NUMBER, for a figure that had no producer anywhere.
+
+    The page prints a plan fragment and the module docstring quotes the same line. Both said
+    three, which was the count on the corpus this was built from before the source changed, and
+    the assertion beside them is `rows_removed_by_filter > 0`, which is true of any positive
+    number. So the one figure a reader is shown was the one nothing computed.
+
+    The claim survives the correction, because the argument is about reading versus returning
+    and one is still more than none. Compared against the sentence that carries the figure
+    rather than searched for in the page, and required to appear exactly once, so a second
+    quoted plan cannot satisfy this while the first goes stale.
+    """
+    embedding, _ = forbidden_embedding()
+    with as_retriever.cursor() as cursor:
+        query, params = retrieval.unbarriered_sql(LATE_KNOWING_TIME, embedding)
+        visited = _forbidden_rows_visited(cursor, query, params)
+
+    assert visited > 0, "the obvious query reads nothing forbidden, so there is no finding here"
+    for text, what in (
+        ((REPO / "README.md").read_text("utf-8"), "the README"),
+        (retrieval.__doc__ or "", "the retrieval module docstring"),
+    ):
+        quoted = QUOTED_COUNT.findall(" ".join(text.split()))
+        assert len(quoted) == 1, f"{what} quotes {len(quoted)} plan counts, and this wants one"
+        assert int(quoted[0]) == visited, what
+
+
+def test_the_decision_records_measurement_table_is_still_the_measurement(
+    as_retriever: psycopg.Connection[tuple[object, ...]],
+) -> None:
+    """The same figures, in the four-row table ADR 0004 was decided on.
+
+    Three of its four constructions are the ones this suite already builds, so they are compared
+    against a live plan here. The fourth, a partial index on publication alone, needs an index
+    the suite deliberately does not create, and its cell is left as the capture-time
+    measurement; the argument for it is qualitative anyway, that such an index admits held out
+    periods once the knowing-time is late enough.
+    """
+    embedding, _ = forbidden_embedding()
+    with as_retriever.cursor() as cursor:
+        obvious, params = retrieval.unbarriered_sql(LATE_KNOWING_TIME, embedding)
+        measured = {
+            "a `WHERE` clause beside the full index": _forbidden_rows_visited(
+                cursor, obvious, params
+            ),
+            "a partial index carrying both predicates": _forbidden_rows_visited(
+                cursor, *retrieval.search_sql(LATE_KNOWING_TIME, HOLDOUT_RANK, embedding)
+            ),
+            # No predicate at all, so no partial index can serve it and the policy is the only
+            # thing standing between the role and the rows. That is what this row means.
+            "row level security alone": _forbidden_rows_visited(
+                cursor,
+                "select id, series, observation, published from notes "
+                "order by embedding <=> %s limit %s",
+                (retrieval.vector_literal(embedding), 10),
+            ),
+        }
+
+    stated = dict(MEASURED_ROW.findall(RECORD.read_text("utf-8")))
+    assert len(stated) == 4, f"ADR 0004 states {len(stated)} measured rows, and it decided on 4"
+    for construction, visited in measured.items():
+        assert construction in stated, construction
+        assert int(stated[construction]) == visited, construction
 
 
 def test_row_level_security_stops_them_being_returned_under_any_query(

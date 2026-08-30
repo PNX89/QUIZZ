@@ -84,9 +84,10 @@ series. Roughly a hundred assertions rewritten against recomputed values.
   became a result type rather than a dropped row.
 - **A rebasing is not a revision, and the metadata will not tell you which.** The CPI index was
   rebased from 2005=100 to 2015=100 at the version released 2016-01-19, and the ONS went on
-  printing the title "2005=100" until 2018-12-19. For nearly three years the published metadata
-  named a base the numbers had stopped using. Rebasings are computed from the ratios between
-  consecutive versions at capture time and recorded, never read from the title.
+  printing the title "2005=100" for five more versions, until the one released 2016-05-17. For
+  about four months the published metadata named a base the numbers had stopped using.
+  Rebasings are computed from the ratios between consecutive versions at capture time and
+  recorded, never read from the title.
 - **A second source that can actually fail.** The old corpus came with a file of the publisher's
   own first, second and third release figures. The ONS publishes no such file, and comparing the
   same series across the three bulletins it appears in is weak, since an extraction bug would
