@@ -1,15 +1,18 @@
 """Whether the harness can tell three different agents apart, which is the only thing it is for.
 
-The numbers asserted here are the ones a reader should check first. `latest_value` scores 0.333
-on the answerable questions because exactly one answerable question in three is asked at a
-knowing-time where today's figure happens to be the right one. That is not a coincidence and it
-is not tuned: the set asks each observation at its first release, one month before its last
-restatement, and today, and only the third of those forgives a tool with no knowing-time.
+The numbers asserted here are the ones a reader should check first. `latest_value` scores 0.389
+on the answerable questions, because each observation is asked at its earliest row, one month
+before its last restatement, and today, and only the last of those forgives a tool with no
+knowing-time. That is twelve of the thirty six. Two further questions land on today's figure by
+accident, which is where the remaining fortieth of the score comes from and is why this file says
+fourteen rather than reasoning its way to twelve.
 """
 
 from __future__ import annotations
 
 import sqlite3
+
+import pytest
 
 from quizz import golden
 from quizz.scoring import Response, score
@@ -32,6 +35,28 @@ def test_looking_the_number_up_fails_two_thirds_of_the_answerable_questions(
     result = score(db, questions, baselines.latest_value(db, questions))
     assert result.answer_accuracy < 0.4
     assert result.answered_wrongly >= 20
+
+
+def test_the_lookup_baseline_is_right_only_where_the_knowing_time_does_not_bite(
+    db: sqlite3.Connection,
+) -> None:
+    """The explanation under the README's scoring table, counted rather than reasoned about.
+
+    The page gave the figure as exactly one in three and explained it as the settled question of
+    each group of three. The arithmetic was right and the count was not: twelve of the thirty
+    six answerable questions are settled ones and two more agree with today's figure by
+    accident, which is fourteen. An explanation that is wrong in kind survives a reader checking
+    the digit, so both halves are counted here.
+    """
+    questions = golden.build(db)
+    result = score(db, questions, baselines.latest_value(db, questions))
+    newest = str(db.execute("select max(vintage) as newest from observations").fetchone()["newest"])
+    answerable = [question for question in questions if question.expected == "answer"]
+    settled = [question for question in answerable if question.as_of == newest]
+    assert len(answerable) == 36
+    assert len(settled) == 12
+    assert result.answered_correctly == 14, "the twelve settled questions, and two coincidences"
+    assert result.answer_accuracy == pytest.approx(14 / 36)
 
 
 def test_looking_the_number_up_leaks_the_holdout(db: sqlite3.Connection) -> None:

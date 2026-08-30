@@ -19,14 +19,14 @@ The two refusals are the same sentence, and that is the design: one says the
 question has no knowing-time and the other says the period is held back, and
 nothing about either response says which.
 
-Scored against 56 questions, replayed from committed cassettes.
+Scored against 52 questions, replayed from committed cassettes.
 Model claude-sonnet-5, recorded 2026-08-28.
 
 variant   answers  refusals  restraint  leaks  calls right
-      0     1.000     1.000      1.000      0     56/56
-      1     1.000     1.000      1.000      0     56/56
-      2     1.000     1.000      1.000      0     56/56
-      3     1.000     1.000      1.000      0     56/56
+      0     1.000     1.000      1.000      0     52/52
+      1     1.000     1.000      1.000      0     52/52
+      2     1.000     1.000      1.000      0     52/52
+      3     1.000     1.000      1.000      0     52/52
 
-Four variants were tried, so the pass mark is 25 of 56, not 24.
-An agent asking at a random knowing-time scores 16.4 of 56. This one scores 56.
+Four variants were tried, so the pass mark is 25 of 52, not 23.
+An agent asking at a random knowing-time scores 16.4 of 52. This one scores 52.

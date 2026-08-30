@@ -19,6 +19,11 @@ import sys
 REPO = pathlib.Path(__file__).resolve().parent.parent
 EVIDENCE = REPO / "docs" / "evidence"
 
+#: A document sending a reader to a named constant in a named module. Whitespace is flattened
+#: before this runs, because prose wraps and the pair straddled a line break in the one case
+#: this was written for.
+NAMED_SYMBOL = re.compile(r"`([A-Z][A-Z0-9_]{2,})` in `([A-Za-z0-9_./-]+\.py)`")
+
 
 def facts() -> dict[str, object]:
     parsed: dict[str, object] = json.loads((EVIDENCE / "facts.json").read_text("utf-8"))
@@ -91,3 +96,30 @@ def test_the_two_refusals_in_the_captured_demo_are_identical() -> None:
     refusals = re.findall(r'\{"refused": "([^"]+)"\}', demo)
     assert len(refusals) >= 2
     assert len(set(refusals)) == 1, refusals
+
+
+def test_every_symbol_a_document_sends_a_reader_to_is_one_that_exists() -> None:
+    """The README calls one of these documents the place the refusal rules are written out.
+
+    That document pointed at a constant in `quizz/asof.py` that had been replaced by declared
+    rows in `quizz.barrier` and existed nowhere in the tree. The module said so in as many
+    words, twenty lines from where the pointer landed, so the rejected design outlived the
+    decision to reject it in the one document a reader clicks through to. Nothing caught it
+    because the doc-drift machinery only ever reads the README.
+    """
+    pairs = [
+        (path.relative_to(REPO), name, module)
+        for path in sorted((REPO / "docs").rglob("*.md"))
+        for name, module in NAMED_SYMBOL.findall(" ".join(path.read_text("utf-8").split()))
+    ]
+    assert pairs, "no document names a symbol in a module, so this is checking nothing at all"
+    broken = [
+        (str(doc), name, module)
+        for doc, name, module in pairs
+        if not (REPO / module).exists() or name not in (REPO / module).read_text("utf-8")
+    ]
+    assert broken == [], (
+        f"these documents name symbols that do not exist: {broken}. A pointer into the source "
+        "is the natural next click after the README, and one that lands on nothing reads as a "
+        "document nobody maintained."
+    )

@@ -8,6 +8,8 @@ repository prints is worthless.
 from __future__ import annotations
 
 import math
+import pathlib
+import re
 import sqlite3
 from statistics import NormalDist
 
@@ -17,6 +19,12 @@ from quizz import gate, golden
 
 NORMAL = NormalDist()
 EULER = 0.5772156649015329
+RECORD = (
+    pathlib.Path(__file__).resolve().parent.parent
+    / "docs"
+    / "adr"
+    / "0006-an-exact-trial-correction.md"
+)
 
 
 def expected_max_by_integration(n: int) -> float:
@@ -97,6 +105,50 @@ def test_the_pass_mark_rises_with_the_number_of_variants(db: sqlite3.Connection)
     thresholds = [gate.build(probabilities, n).threshold for n in (1, 2, 4, 8, 16, 64)]
     assert thresholds == sorted(thresholds)
     assert thresholds[-1] > thresholds[0]
+
+
+def test_the_ladder_is_the_one_the_decision_record_prints(db: sqlite3.Connection) -> None:
+    """The same six thresholds, against the sentence in ADR 0006 that states them.
+
+    The test above asserts the ladder is weakly rising and ends higher than it starts. Both are
+    true of the real ladder and were equally true of the stale one in the record, where every
+    one of the six entries had drifted with the corpus while the build stayed green. A ladder
+    with no producer is a ladder nobody is reading.
+    """
+    probabilities = gate.null_probabilities(db, golden.build(db))
+    computed = [gate.build(probabilities, n).threshold for n in (1, 2, 4, 8, 16, 64)]
+    stated = re.search(
+        r"Thresholds rise ([\d, ]+?) for one, two, four, eight, sixteen and sixty four",
+        " ".join(RECORD.read_text("utf-8").split()),
+    )
+    assert stated is not None, "ADR 0006 no longer prints a ladder, so this checks nothing"
+    assert [int(entry) for entry in stated.group(1).split(",")] == computed
+
+
+def test_both_copies_of_the_null_expectation_are_the_measured_one(
+    db: sqlite3.Connection,
+) -> None:
+    """One figure, written down twice, and neither copy computed from anything.
+
+    The module and the record each say what an agent with no sense of a knowing-time scores in
+    expectation. Both said 14.4 of 56 long after the corpus had moved them to 16.4 of 52, which
+    is the failure this repository exists to detect, in this repository.
+    """
+    questions = golden.build(db)
+    expectation = sum(gate.null_probabilities(db, questions))
+    for text, pattern, what in (
+        (gate.__doc__ or "", r"It scores ([\d.]+) of (\d+) in expectation", "gate.py"),
+        (RECORD.read_text("utf-8"), r"It scores \*\*([\d.]+) of (\d+)\*\*", "ADR 0006"),
+    ):
+        stated = re.search(pattern, " ".join(text.split()))
+        assert stated is not None, f"{what} no longer states the null expectation"
+        assert float(stated.group(1)) == pytest.approx(expectation, abs=0.05), what
+        assert int(stated.group(2)) == len(questions), what
+
+    # The record opens by saying what a score is a count OF, which is the same number a third
+    # time and was the same number wrong a third time.
+    counted = set(re.findall(r"how many of (\d+) questions", RECORD.read_text("utf-8")))
+    assert counted == {str(len(questions))}, f"ADR 0006 states the set size as {counted}"
 
 
 def test_the_null_never_clears_the_gate_at_any_number_of_variants(

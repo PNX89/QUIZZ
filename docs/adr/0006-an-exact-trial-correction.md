@@ -13,7 +13,7 @@ selected from. The arithmetic is not the same arithmetic, and the difference is 
 A Sharpe ratio is continuous and roughly normal, so the expected maximum of N draws has no closed
 form and is estimated, classically by a Gumbel expression.
 
-A score here is a **count**: how many of 56 questions came out right. Its null is a sum of
+A score here is a **count**: how many of 52 questions came out right. Its null is a sum of
 independent Bernoulli trials with different probabilities, which is a Poisson binomial, and its
 distribution convolves exactly in a millisecond. The maximum of N independent draws is then
 exactly `F(x)` to the power N, with no approximation anywhere.
@@ -37,11 +37,11 @@ An agent that calls the right tool with the right series and period, and picks i
 uniformly at random from the declared ones. That is precisely an agent with no sense of when it
 is being asked about, which is the ability this repository measures.
 
-It scores **14.4 of 56** in expectation rather than zero, because some questions come out the same
+It scores **16.4 of 52** in expectation rather than zero, because some questions come out the same
 at every knowing-time: a held-out period is refused whenever it is asked about. Assuming a null
 of zero would have set the bar far too low.
 
-Thresholds rise 21, 22, 23, 23, 24, 25 for one, two, four, eight, sixteen and sixty four
+Thresholds rise 23, 24, 25, 25, 26, 27 for one, two, four, eight, sixteen and sixty four
 variants. Weakly, because a threshold is a count of questions and moves in whole ones.
 
 ## The test that stops the build

@@ -36,6 +36,9 @@ POLICY = RetryPolicy(attempts=6, base_delay=1.0, multiplier=2.0, max_delay=60.0)
 NAIVE_TTL_SECONDS = 5.0
 #: When the retries land. Inside the horizon, and after the naive lifetime has expired.
 RETRY_AT_MS = 7_000
+#: Long enough idle that an uncapped refill would have earned a hundred tokens against a
+#: capacity of five, which is where a token bucket and a counter that only grows part company.
+IDLE_MS = 500_000
 
 
 @pytest.fixture
@@ -111,6 +114,27 @@ def test_the_bucket_refills_at_the_rate_it_was_given(client: redis_client.Redis)
     assert burst(bucket, client, 1, at_ms=4_000) == 0
     assert burst(bucket, client, 1, at_ms=5_000) == 1
     assert burst(bucket, client, CAPACITY, at_ms=30_000) == CAPACITY
+
+
+def test_an_idle_bucket_does_not_accrue_credit_beyond_its_capacity(
+    client: redis_client.Redis,
+) -> None:
+    """The cap on the refill, which is what makes this a bucket and not a growing counter.
+
+    Without it a client that goes quiet earns a token every five seconds for as long as it stays
+    quiet and can then fire the whole balance at once, which is precisely the burst the limiter
+    exists to stop. The refill test above never reaches this: at thirty seconds the arithmetic
+    has earned six tokens and the capacity of five is barely binding, so the cap could be
+    deleted and every assertion in it would still hold.
+    """
+    bucket = TokenBucket(CAPACITY, REFILL_PER_SECOND, POLICY)
+    assert burst(bucket, client, CAPACITY, at_ms=0) == CAPACITY
+    accrued = REFILL_PER_SECOND * (IDLE_MS / 1000)
+    assert accrued > CAPACITY * 2, (
+        f"{accrued} tokens accrue over {IDLE_MS / 1000}s against a capacity of {CAPACITY}, "
+        "which is not enough headroom for this test to say anything about the cap"
+    )
+    assert burst(bucket, client, 40, at_ms=IDLE_MS) == CAPACITY
 
 
 def test_simultaneous_callers_cannot_between_them_admit_more_than_the_capacity(

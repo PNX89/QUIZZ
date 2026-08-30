@@ -119,6 +119,34 @@ def test_clearing_an_in_flight_step_is_a_deliberate_act(tmp_path: pathlib.Path) 
     assert effects(log) == ["q1", "q2", "q2"], "clearing should allow exactly one more attempt"
 
 
+def test_clearing_cannot_reach_a_step_whose_effect_was_already_recorded(
+    tmp_path: pathlib.Path,
+) -> None:
+    """The `response is null` clause, which is what keeps the escape hatch an escape hatch.
+
+    Clearing forgets a step so it will be attempted again, and attempting a paid step again is
+    the one thing this module exists to prevent. Aimed at a step that finished, it therefore has
+    to do nothing whatever: q1's response was committed before the crash, so the recorded answer
+    is replayed and the provider is never asked a second time. Without the clause the delete
+    succeeds, the record goes, and the run pays twice while every other test here stays green.
+    """
+    database, log, _ = crash(tmp_path, "inside-effect")
+    assert effects(log) == ["q1", "q2"]
+
+    connection = durable.connect(database)
+    try:
+        durable.clear_in_flight(connection, "run", "q1")
+        assert durable.progress(connection, "run").completed == 1, "a recorded step was forgotten"
+        replayed = durable.run_step(
+            connection, "run", "q1", 1, NOW, functools.partial(_replay, log, "q1")
+        )
+        assert replayed == "response for q1"
+    finally:
+        connection.close()
+
+    assert effects(log) == ["q1", "q2"], "a completed step was cleared and paid for twice"
+
+
 def _replay(log: pathlib.Path, step: str) -> str:
     with log.open("a", encoding="utf-8") as handle:
         handle.write(step + "\n")
