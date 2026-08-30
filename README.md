@@ -203,7 +203,7 @@ Both were found by grading the calls rather than only the outcomes.
 
 ## Recording, and what a cassette does not prove
 
-224 exchanges were recorded once, for 1.14 euros, and are replayed by every test. Nothing in a
+224 exchanges were recorded once, for 1.16 euros, and are replayed by every test. Nothing in a
 required job reaches the network or needs a key.
 
 **A cassette that cannot miss is a cassette that lies.** Change the prompt template, replay the
@@ -253,7 +253,7 @@ The corpus carries two kinds of revision rather than one. A quarter is restated 
 source data arrived, at no fixed time. The chained volume measures are ALSO re-referenced every
 autumn in the annual Blue Book, when the reference year moves and the whole history shifts by
 very nearly a constant factor without anybody having learned anything new about any quarter in
-it. Measured over this extract, **2162 of ABMI's recorded changes land in a November vintage**.
+it. Measured over this extract, **2152 of ABMI's recorded changes land in a November vintage**.
 
 **A rebasing is not a revision, and the publisher's own metadata will not tell you which is
 which.** Comparing raw values reported that every shared point of the CPI index had changed. The
@@ -262,7 +262,7 @@ The ONS made that change at the version released 2016-01-19 and went on printing
 "2005=100" until the version released 2016-05-17, five versions and about four months later, so
 the metadata named a base the numbers had stopped using. Rebasings are therefore computed from
 the ratios at capture time and recorded in `SOURCE.json`, never read from the title. The
-detector finds nine in the GDP level, almost all in November, and none at all in the two series
+detector finds nine in the GDP level, six of them in November, and none at all in the two series
 that are rates and have no base to move.
 
 ## Surviving being killed

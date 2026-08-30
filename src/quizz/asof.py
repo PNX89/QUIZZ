@@ -37,12 +37,6 @@ REFUSAL = "refused: this question is not answerable under the as-of contract"
 #: commit that looks like every other commit.
 
 
-def period_key(period: str) -> tuple[int, int]:
-    """Order `2024-Q2` and `2024-07` on one scale, by the last month each of them covers."""
-    year, rest = period.split("-", 1)
-    return (int(year), int(rest[1:]) * 3 if rest.startswith("Q") else int(rest))
-
-
 @dataclass(frozen=True)
 class Answer:
     """A value, and the vintage it came from, which is the part that makes it checkable."""
@@ -110,9 +104,9 @@ Result = Answer | NotPublished | PublishedBlank | Refused
 # September silently excludes everything published during September. Truncating to the asked
 # precision means a month means the whole month, which is what a person asking means.
 #
-# `order by version desc`, not by vintage. A release date is not unique: IHYQ has 45 versions
-# and 43 distinct dates, and the two published on 2019-05-09 disagree, one of them showing an
-# observation as blank. Ordering by date picks between them arbitrarily.
+# `order by version desc`, not by vintage. A release date is not unique: IHYQ has 45 previous
+# versions and 43 distinct dates, and the two published on 2019-05-09 disagree, one of them
+# showing an observation as blank. Ordering by date picks between them arbitrarily.
 _AS_OF = """
 select vintage, version, value
   from observations

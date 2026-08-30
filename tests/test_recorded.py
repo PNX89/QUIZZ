@@ -12,7 +12,7 @@ from importlib import resources
 import pytest
 
 from quizz import golden, live
-from quizz.cassette import Cassettes
+from quizz.cassette import Cassettes, key_for
 
 MODEL = "claude-sonnet-5"
 
@@ -54,16 +54,23 @@ def test_every_exchange_reports_the_tokens_it_used() -> None:
 def test_the_cassettes_cover_every_question_and_every_variant(db: sqlite3.Connection) -> None:
     """The strongest of these. A replay that misses is a question that was never asked.
 
-    Two questions render identically, so the count of exchanges is lower than the count of
-    pairs by exactly that many, and both of them replay the one recording.
+    None of today's 52 questions render identically under any variant: each of the 208 pairs
+    hashes to a cassette key of its own, so this also checks that no two of them collide onto
+    one recording. The store holds 224 exchanges, sixteen more than that, held over from the
+    four questions the golden set no longer asks.
     """
     labels = golden.labels_from(db)
     store = load()
-    for question in golden.build(db):
+    keys = set()
+    questions = golden.build(db)
+    for question in questions:
         for variant in range(len(golden.VARIANTS)):
             rendered = golden.render(question, variant, labels)
             request = live.request_for(rendered, MODEL)
             store.replay(MODEL, live.TEMPLATE_ID, request)
+            keys.add(key_for(MODEL, request))
+    pairs = len(questions) * len(golden.VARIANTS)
+    assert len(keys) == pairs, f"{pairs - len(keys)} of the {pairs} rendered pairs collide"
 
 
 def test_the_recorded_prompt_carries_the_series_catalogue() -> None:

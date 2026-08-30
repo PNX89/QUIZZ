@@ -44,6 +44,22 @@ def test_the_child_really_dies_of_a_signal_and_not_of_an_exception(
     assert code == -9, code
 
 
+def test_connect_pins_the_durable_pragma_pair(tmp_path: pathlib.Path) -> None:
+    """The configuration, not the mechanism.
+
+    Neither setting fails a SIGKILL test if weakened: this repository's own kill happens after
+    a commit, and a committed transaction under the default rollback journal survives that too.
+    So the pragmas are pinned directly rather than through a scenario that cannot tell them
+    apart from a weaker pair.
+    """
+    connection = durable.connect(str(tmp_path / "run.sqlite"))
+    try:
+        assert connection.execute("pragma journal_mode").fetchone()[0] == "wal"
+        assert connection.execute("pragma synchronous").fetchone()[0] == 2
+    finally:
+        connection.close()
+
+
 def test_a_step_whose_effect_was_recorded_is_never_repeated(tmp_path: pathlib.Path) -> None:
     """Killed after the commit. The resumed run picks up at the third step."""
     database, log, _ = crash(tmp_path, "after-commit")

@@ -18,6 +18,8 @@ import sys
 
 REPO = pathlib.Path(__file__).resolve().parent.parent
 EVIDENCE = REPO / "docs" / "evidence"
+README = (REPO / "README.md").read_text("utf-8")
+PYPROJECT = (REPO / "pyproject.toml").read_text("utf-8")
 
 #: A document sending a reader to a named constant in a named module. Whitespace is flattened
 #: before this runs, because prose wraps and the pair straddled a line break in the one case
@@ -62,10 +64,23 @@ def test_the_recorded_test_total_is_this_suites_real_total() -> None:
 
 
 def test_the_recorded_python_range_is_the_one_ci_actually_runs() -> None:
-    """A card claiming support the pipeline does not test is a card making it up."""
+    """A card claiming support the pipeline does not test is a card making it up.
+
+    Two more places name the same versions by hand and moving the matrix does not reach either:
+    the README's badge, and the classifiers in pyproject.toml. Both are hand-typed copies with
+    no producer of their own, so both are checked against the same CI matrix here.
+    """
     workflow = (REPO / ".github" / "workflows" / "ci.yml").read_text("utf-8")
     versions = sorted({v for v in re.findall(r'"(3\.\d+)"', workflow)}, key=lambda v: int(v[2:]))
     assert facts()["python"] == f"{versions[0]} to {versions[-1]}"
+
+    badge = "%20%7C%20".join(versions)
+    assert f"python-{badge}-blue" in README, "the README's Python badge no longer names the CI versions"
+
+    classifiers = set(re.findall(r'"Programming Language :: Python :: (3\.\d+)"', PYPROJECT))
+    assert classifiers == set(versions), (
+        f"pyproject.toml classifies {sorted(classifiers)} and CI runs {versions}"
+    )
 
 
 def test_the_recorded_release_matches_the_package_version() -> None:

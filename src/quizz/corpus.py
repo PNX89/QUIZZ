@@ -25,8 +25,9 @@ knowing-time.
 
 AND `value` IS NULLABLE. At version 16 of IHYQ, released 2019-05-09, the observation `2018 Q4`
 was published as an empty string; it had been 0.2 since February and was 0.2 again at version 17,
-released the same day. Published-as-nothing is a third state beside a number and an absence, and
-it is the only record in the corpus that distinguishes them.
+released the same day. ABMI shows the identical gap at the identical version. Published-as-
+nothing is a third state beside a number and an absence, and these are the two records in the
+corpus that distinguish them.
 """
 
 from __future__ import annotations
@@ -135,10 +136,10 @@ def _load(connection: sqlite3.Connection) -> None:
                     # NULL rather than a number, and rather than a dropped row. The ONS
                     # published IHYQ 2018 Q4 as an empty string at version 16, having shown 0.2
                     # since February and showing 0.2 again at version 17 the same afternoon.
-                    # That is a third state beside a value and an absence: published, as
-                    # nothing. Dropping the row would make it indistinguishable from not yet
-                    # published, and it is the only record in six thousand that can tell them
-                    # apart.
+                    # ABMI shows the identical gap at the identical version. That is a third
+                    # state beside a value and an absence: published, as nothing. Dropping the
+                    # row would make it indistinguishable from not yet published, and these are
+                    # the two records in six thousand that can tell them apart.
                     float(r["value"]) if r["value"].strip() else None,
                 )
                 for r in rows

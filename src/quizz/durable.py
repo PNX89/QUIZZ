@@ -79,9 +79,12 @@ class Progress:
 def connect(path: str) -> sqlite3.Connection:
     """A connection whose transactions really are transactions.
 
-    Two settings and both matter. `isolation_level=None` turns off the driver's implicit
-    transaction handling so `begin` in this module means what it says. WAL is what makes a
-    commit survive the process being killed rather than merely surviving the process exiting.
+    `isolation_level=None` turns off the driver's implicit transaction handling so `begin` in
+    this module means what it says. `wal` and `full` are SQLite's most durable pragma pair,
+    chosen for that rather than for throughput. Which of the two the SIGKILL tests below
+    actually depend on is honestly unclear: a committed transaction under the default rollback
+    journal survives being killed too, so the mechanism is a claim the tests cannot isolate.
+    What is pinned, here rather than left to memory, is the configuration itself.
     """
     connection = sqlite3.connect(path, isolation_level=None)
     connection.row_factory = sqlite3.Row

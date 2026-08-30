@@ -292,6 +292,28 @@ def test_the_two_mechanisms_are_not_redundant(
     assert loose.has_filter and tight.has_filter
 
 
+def test_has_filter_is_false_for_the_query_that_should_show_none(
+    loaded: psycopg.Connection[tuple[object, ...]],
+) -> None:
+    """The negative case the comment above names, made into an assertion.
+
+    Both plans above assert `has_filter` True, and nothing before this asserted it False, so
+    `has_filter` could not be told apart from a property that always returns True. Reusing
+    `search_sql`'s own predicates on the owner connection does not give that negative case: the
+    covering index is built for one knowing-time and the owner's plan still shows a residual
+    `Filter:` line checking the parameter against it. What the comment actually contrasts is
+    row level security itself. The owner bypasses it, so a query naming no predicate of its own
+    has nothing left to filter on; the same query under the retriever role still gets the
+    policy's predicate injected, which is what the module docstring's whole argument rests on.
+    """
+    embedding, _ = forbidden_embedding()
+    query = "select id from notes order by embedding <=> %s limit %s"
+    params = (retrieval.vector_literal(embedding), 10)
+    with loaded.cursor() as cursor:
+        owner_plan = retrieval.explain(cursor, query, params)
+    assert not owner_plan.has_filter, owner_plan.text
+
+
 def test_the_retrieval_role_cannot_read_the_holdout_definition(
     as_retriever: psycopg.Connection[tuple[object, ...]],
 ) -> None:

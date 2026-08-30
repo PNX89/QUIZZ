@@ -32,7 +32,7 @@ answers "what did this say on that date", and it is roughly a twentieth of the r
 ONS for the whole of it.
 
 THE `basis` COLUMN IS THE POINT, and it was added after a measurement went wrong. Comparing raw
-values across vintages reported that all 444 shared points of the CPI index had changed. They had
+values across vintages reported that all 336 shared points of the CPI index had changed. They had
 not: the series was rebased from 2005=100 to 2015=100 and the ratio between the two is constant
 to within half a per cent. A rebasing is not a revision, and a corpus that cannot tell them apart
 would teach an agent to report a scale change as a correction. The series title carries the base,
@@ -231,8 +231,11 @@ def canonical_period(raw: str) -> str:
         return f"{parts[0]}-{parts[1]}"
     if len(parts) == 2 and parts[1].upper() in MONTHS:
         return f"{parts[0]}-{MONTHS[parts[1].upper()]}"
-    if len(parts) == 1 and parts[0].isdigit() and len(parts[0]) == 4:
-        return parts[0]
+    # A bare four digit year, the ONS spelling for an annual observation, used to be passed
+    # through unchanged here. Nothing in SERIES reads the "years" block today, so it was
+    # untested and wrong: "2025" sorts before "2025-01", and every period_rank parser in this
+    # repository raises on it. Teach this function and them together, deliberately, the day an
+    # annual series is actually added, rather than shipping a shape nothing exercises.
     raise ValueError(
         f"{raw!r} is a period spelling this does not recognise. Teach it rather than letting "
         f"the value through, which would sort wrongly against every other period."
@@ -253,9 +256,9 @@ def changes_only(rows: list[Row]) -> list[Row]:
     for observation in sorted(by_observation):
         previous: str | None = None
         # Ordered by VERSION, not by release date. Two versions can share a date: IHYQ has 45
-        # versions and 43 distinct dates, and the pair on 2019-05-09 differ, one of them
-        # publishing an observation as blank. Sorting by date puts them in an arbitrary order
-        # and merges two publications into one moment.
+        # previous versions and 43 distinct dates, and the pair on 2019-05-09 differ, one of
+        # them publishing an observation as blank. Sorting by date puts them in an arbitrary
+        # order and merges two publications into one moment.
         for row in sorted(by_observation[observation], key=lambda r: r[2]):
             if row[3] != previous:
                 kept.append(row)
