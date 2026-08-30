@@ -13,6 +13,7 @@ contract in DOCDRIFT.md names, implemented for this repository:
 from __future__ import annotations
 
 import csv
+import importlib.util
 import json
 import pathlib
 import re
@@ -27,6 +28,7 @@ from tests import baselines
 REPO = pathlib.Path(__file__).resolve().parent.parent
 README = (REPO / "README.md").read_text("utf-8")
 EVIDENCE = REPO / "docs" / "evidence"
+ADR_0001 = REPO / "docs" / "adr" / "0001-where-the-vintages-come-from.md"
 
 #: The page spells this count out, so a test of it has to as well. A count outside this range
 #: raises here, which is the right failure: the sentence needs rewriting at that point anyway.
@@ -60,6 +62,38 @@ def test_the_readme_states_numbers_that_are_true_today(db: sqlite3.Connection) -
     # shape a partial edit leaves behind.
     counted = set(re.findall(r"(\d+) questions", README))
     assert counted == {str(len(questions))}, f"the page states more than one set size: {counted}"
+
+
+def test_the_readme_and_the_adr_state_the_cassette_cost_the_committed_tokens_produce() -> None:
+    """NUMBER. The euro figure beside the exchange count, computed rather than typed twice.
+
+    The README and ADR 0001 each print a euro cost for the same re-record, typed by hand in
+    both places, and typed differently: 1.14 in one and 1.16 in the other. This computes the
+    figure from `Cassettes.cost_tokens` and the published prices `scripts/record_cassettes.py`
+    declares, and requires both documents to print that one rounded value.
+    """
+    with resources.as_file(
+        resources.files("quizz.data") / "cassettes" / "claude-sonnet-5.json"
+    ) as path:
+        cassettes = Cassettes.load(path)
+    tokens_in, tokens_out = cassettes.cost_tokens
+
+    spec = importlib.util.spec_from_file_location(
+        "record_cassettes", REPO / "scripts" / "record_cassettes.py"
+    )
+    assert spec is not None and spec.loader is not None
+    record_cassettes = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(record_cassettes)
+    input_price, output_price = record_cassettes.PRICES["claude-sonnet-5"]
+    cost_eur = (
+        (tokens_in * input_price + tokens_out * output_price)
+        / 1_000_000
+        * record_cassettes.EUR_PER_USD
+    )
+
+    exchanges = len(cassettes.exchanges)
+    assert f"{exchanges} exchanges were recorded once, for {cost_eur:.2f} euros" in README
+    assert f"{exchanges} exchanges at {cost_eur:.2f} EUR" in ADR_0001.read_text("utf-8")
 
 
 def test_the_readme_number_of_discriminating_questions_is_the_real_one(
@@ -145,11 +179,40 @@ def test_the_readme_november_count_is_the_corpus_count(db: sqlite3.Connection) -
     It used to count February vintages, because the old corpus carried a seasonally adjusted
     price index restated every February. The ONS series re-reference in the autumn instead, so
     the month moved with the source rather than the claim being quietly dropped.
+
+    The sentence's noun is "changes", not "rows": an observation's first published value is not
+    a change, it is the value there was nothing to change. Ten of ABMI's November rows are each
+    observation's first vintage, so the query excludes them the same way golden.py's own
+    first-vintage checks do, by comparing against min(vintage) per observation.
     """
     novembers = db.execute(
-        "select count(*) as n from observations where series = 'ABMI' and vintage like '%-11-%'"
+        "select count(*) as n from observations o where series = 'ABMI' and vintage like '%-11-%' "
+        "and vintage != (select min(vintage) from observations o2 "
+        "where o2.series = o.series and o2.observation = o.observation)"
     ).fetchone()["n"]
     assert f"{novembers} of ABMI's recorded changes land in a November vintage" in README
+
+
+def test_the_readme_rebasing_count_and_its_november_share_are_the_source_record() -> None:
+    """NUMBER. The rebasing paragraph's count and month split, read from where they are made.
+
+    A rebasing is "computed from the ratios at capture time and recorded in `SOURCE.json`,
+    never read from the title" (the sentence just above the one this checks), so the count and
+    the November share are read from that file rather than recomputed from the ratios.
+    test_corpus.py separately checks that the mechanism the count is evidence for is visible in
+    the corpus; this checks that the page states the number SOURCE.json actually holds.
+    """
+    raw = (resources.files("quizz.data") / "vintages" / "SOURCE.json").read_text("utf-8")
+    entries = {entry["name"]: entry for entry in json.loads(raw)["series"]}
+    abmi_rebasings = entries["ABMI"]["rebasings"]
+    november = sum(1 for rebasing in abmi_rebasings if rebasing["vintage"][5:7] == "11")
+    assert entries["IHYQ"]["rebasings"] == [] and entries["MGSX"]["rebasings"] == [], (
+        "the two rate series are supposed to record no rebasings at all"
+    )
+    assert (
+        f"detector finds {IN_WORDS[len(abmi_rebasings)]} in the GDP level, "
+        f"{IN_WORDS[november]} of them in November, and none at all in the two series"
+    ) in README
 
 
 def test_every_command_the_readme_shows_is_one_this_repository_runs(
@@ -213,6 +276,20 @@ def test_every_path_and_link_in_the_readme_resolves() -> None:
             continue
         assert not target.startswith("http://"), target
         assert (REPO / target.split("#")[0]).exists(), target
+
+
+def test_the_readme_states_the_real_number_of_decision_records() -> None:
+    """NUMBER. `docs/adr/` is walked rather than counted by eye.
+
+    The link-resolution test above confirms each of the six records it names today opens; it
+    says nothing about a seventh record left out of the count. This recomputes the total from
+    the directory itself, so the next decision record moves this sentence or fails it, and
+    checks the table beneath it lists exactly that many rows rather than a stale subset.
+    """
+    count = len(sorted((REPO / "docs" / "adr").glob("*.md")))
+    assert f"{IN_WORDS[count].capitalize()} records under [`docs/adr/`]" in README
+    rows = re.findall(r"^\| \[\d{4}\]\(docs/adr/", README, re.MULTILINE)
+    assert len(rows) == count, f"the table lists {len(rows)} records and the directory holds {count}"
 
 
 def test_the_readme_names_a_headline_file_that_exists() -> None:

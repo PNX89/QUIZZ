@@ -103,3 +103,14 @@ def test_every_golden_question_can_be_driven_through_the_graph(
     answered = sum(1 for outcome in outcomes if outcome.value is not None)
     assert refused == sum(1 for q in questions if q.expected == "refused")
     assert answered == sum(1 for q in questions if q.expected == "answer")
+
+
+def test_the_graph_has_the_two_nodes_the_module_docstrings_claim(
+    db: sqlite3.Connection,
+) -> None:
+    """Both docstrings used to say three. LangGraph adds `__start__` and `__end__` sentinels
+    around whatever is actually built, so those are dropped before comparing.
+    """
+    graph = agent.build(db, Fixed(None)).get_graph()
+    real_nodes = [name for name in graph.nodes if not name.startswith("__")]
+    assert real_nodes == ["choose", "act"]

@@ -30,6 +30,13 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   2020 Q2, and the lag between the CPI rebasing and its title.
 - `docs/AS_OF_CONTRACT.md` points at `barrier.WINDOWS` rather than at a constant that was
   replaced by declared rows before the document was written.
+- The corpus is the ONS's Open Government Licence vintages, not the Philadelphia Fed's
+  Real-Time Data Set that `v0.1.0` shipped. The Fed's own terms only ever granted
+  "informational, educational, and research" use, never redistribution, so the extract this
+  repository had already published was never licensed for that. ADR 0001 has the full
+  reasoning. The `v0.1.0` tag and its GitHub release still point at the commit carrying the
+  withdrawn extract; deleting the files from main did not un-publish that tagged archive, and
+  it still needs a release owner to replace or take it down.
 
 ## [0.1.0] - 2026-08-25
 

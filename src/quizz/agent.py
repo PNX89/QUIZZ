@@ -14,7 +14,7 @@ This is also what makes the scoring honest. `quizz.golden` grades the CALL: righ
 arguments, refusal where one was due. Grading the prose instead would measure fluency, and a
 fluent wrong number is worse than a blunt one.
 
-THE CONCESSION, STATED HERE RATHER THAN DISCOVERED LATER. This graph has three nodes and one
+THE CONCESSION, STATED HERE RATHER THAN DISCOVERED LATER. This graph has two nodes and one
 edge worth arguing about, and LangGraph brings a large dependency tree to express it. A reader
 who wanted the same behaviour without the framework would write about forty lines and lose
 nothing this repository claims. It is here because an explicit state machine with an explicit
@@ -82,7 +82,7 @@ class Outcome:
 
 
 def build(connection: sqlite3.Connection, planner: Planner) -> Any:
-    """Compile the graph. Three nodes, one of which is allowed to be creative."""
+    """Compile the graph. Two nodes, one of which is allowed to be creative."""
 
     def choose(state: State) -> State:
         return {"call": planner.choose(state["question"], tools.TOOLS)}
