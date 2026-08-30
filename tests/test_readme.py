@@ -289,7 +289,9 @@ def test_the_readme_states_the_real_number_of_decision_records() -> None:
     count = len(sorted((REPO / "docs" / "adr").glob("*.md")))
     assert f"{IN_WORDS[count].capitalize()} records under [`docs/adr/`]" in README
     rows = re.findall(r"^\| \[\d{4}\]\(docs/adr/", README, re.MULTILINE)
-    assert len(rows) == count, f"the table lists {len(rows)} records and the directory holds {count}"
+    assert len(rows) == count, (
+        f"the table lists {len(rows)} records and the directory holds {count}"
+    )
 
 
 def test_the_readme_names_a_headline_file_that_exists() -> None:

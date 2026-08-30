@@ -75,7 +75,9 @@ def test_the_recorded_python_range_is_the_one_ci_actually_runs() -> None:
     assert facts()["python"] == f"{versions[0]} to {versions[-1]}"
 
     badge = "%20%7C%20".join(versions)
-    assert f"python-{badge}-blue" in README, "the README's Python badge no longer names the CI versions"
+    assert f"python-{badge}-blue" in README, (
+        "the README's Python badge no longer names the CI matrix"
+    )
 
     classifiers = set(re.findall(r'"Programming Language :: Python :: (3\.\d+)"', PYPROJECT))
     assert classifiers == set(versions), (
