@@ -17,10 +17,10 @@ is not allowed to see.
 
 | construction | forbidden rows visited | enforced by | verdict |
 |---|---|---|---|
-| a `WHERE` clause beside the full index | **3** | nothing, it is a convention | fails the claim |
-| a partial index on publication only | **3** | index contents, partially | fails once the knowing-time is late enough |
+| a `WHERE` clause beside the full index | **1** | nothing, it is a convention | fails the claim |
+| a partial index on publication only | **1** | index contents, partially | fails once the knowing-time is late enough |
 | a partial index carrying both predicates | **0** | index contents | makes the claim literally true |
-| row level security alone | **3** read, 0 returned | the database | cannot return one, still reads them |
+| row level security alone | **1** read, 0 returned | the database | cannot return one, still reads them |
 
 ## Why both
 
@@ -31,7 +31,7 @@ The policy is enforcement, and it answers a different question. Asked to prove t
 cannot read the holdout, the answer is a policy the database applies rather than a query somebody
 remembered to write correctly. But **row level security stops rows being returned without
 stopping them being read**: with only the publication predicate in the index, the policy still had
-to visit three forbidden documents in order to refuse them.
+to visit a forbidden document in order to refuse it.
 
 ## Two corrections to the spike that designed this
 

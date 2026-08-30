@@ -142,10 +142,16 @@ def latest_vintage(connection: sqlite3.Connection) -> str:
 
     A knowing-time after this is refused rather than answered from the last thing on file.
     The corpus was captured on a date; it has nothing to say about the day after.
+
+    BY DATE HERE, DESPITE THE ARGUMENT TWENTY LINES ABOVE, and the two are not in tension. A
+    version number is a per-series counter: CPI is on 131 while the quarterly pair is on 46, so
+    ordering four series by version compares four separate sequences and returns the last
+    release of whichever one has had the most. It agreed with the answer only while the
+    most-versioned series was also the last to publish. Capture between the GDP release and the
+    CPI one and the edge falls a fortnight early, and every settled question in the golden set
+    is refused with a message that by design says nothing about why.
     """
-    row = connection.execute(
-        "select vintage as newest from observations order by version desc limit 1"
-    ).fetchone()
+    row = connection.execute("select max(vintage) as newest from observations").fetchone()
     newest: str = row["newest"]
     return newest
 

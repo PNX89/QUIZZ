@@ -142,9 +142,10 @@ def rebasings(rows: list[Row]) -> list[dict[str, object]]:
 
     THIS CANNOT BE READ OFF THE SERIES TITLE, WHICH IS WHY IT IS COMPUTED. The ONS rebased the
     CPI at the vintage of 2016-01-19, where `1988 APR` goes from 63.1 to 49.3, and went on
-    publishing the title "CPI All Items Index: Estimated pre-97 2005=100" until 2018-12-19. For
-    nearly three years the metadata named a base the numbers had stopped using. An agent that
-    trusts the title is wrong by twenty-two per cent with nothing reporting an error.
+    publishing the title "CPI All Items Index: Estimated pre-97 2005=100" for five more
+    versions, until the one released 2016-05-17. For about four months the metadata named a
+    base the numbers had stopped using. An agent that trusts the title is wrong by twenty-two
+    per cent with nothing reporting an error.
 
     It also cannot be recomputed from the committed extract: that keeps only the vintages at
     which each observation changed, so two consecutive vintages rarely share one to compare.

@@ -110,11 +110,17 @@ def _vintages(connection: sqlite3.Connection, series: str, observation: str) -> 
 
 
 def _eligible(connection: sqlite3.Connection, series: str) -> list[str]:
-    """Observations that were published inside the window, revised twice, and not held out.
+    """Observations revised at least twice, first seen after the corpus opens, not held out.
 
-    Published inside the window matters: an observation whose first row is the opening vintage
-    of the extract was first released before the corpus starts, so there is no knowing-time at
-    which it was genuinely unpublished and no honest not-published question to ask about it.
+    This chooses what to ask ABOUT. Three rows is a revision history worth asking at several
+    knowing-times where two is not, and the vintage bound prefers periods the extract watched
+    over ones it inherited whole at its first row.
+
+    IT IS NOT WHAT MAKES A NOT-PUBLISHED QUESTION HONEST, though it was until that turned out to
+    be wrong. The bound here is the corpus-wide earliest vintage, and the four series were
+    captured on four different days, so it is a series' own opening day for two of them and a
+    fortnight early for the other two. The per-series predicate is `_watched_arrive`, and it is
+    applied where the claim about a release calendar is actually made.
     """
     first_vintage = coverage().first_vintage
     return [
@@ -127,6 +133,30 @@ def _eligible(connection: sqlite3.Connection, series: str) -> list[str]:
         )
         if not is_held_out(str(row["observation"]))
     ]
+
+
+def _watched_arrive(connection: sqlite3.Connection, series: str, observation: str) -> bool:
+    """Whether this extract saw the period published for the first time.
+
+    A not-published answer is a claim about a PUBLIC release calendar, so it has to be true of
+    the calendar and not merely of the file. It is true only where the period's first row is
+    later than the day this series was first captured; where the two are the same day, the
+    figure existed before the extract did and the extract cannot tell how long before.
+
+    The four series were captured on four different days: the quarterly pair opens on
+    2015-05-27 and the two monthly ones a fortnight into that October. Compared against the
+    corpus-wide earliest vintage, the entire back-history of the monthly pair looked as though
+    it had arrived during the window, and the set went on to ask whether the February 1988 CPI
+    index had been published by September 2015. The oracle answered no, because it holds nothing
+    earlier, and an agent that knew the real answer was marked wrong for giving it.
+    """
+    row = connection.execute(
+        "select min(vintage) as first, "
+        "(select min(vintage) from observations where series = :series) as opens "
+        "from observations where series = :series and observation = :observation",
+        {"series": series, "observation": observation},
+    ).fetchone()
+    return bool(row["first"] > row["opens"])
 
 
 def _spread(items: list[str], count: int) -> list[str]:
@@ -168,18 +198,23 @@ def build(connection: sqlite3.Connection) -> tuple[Question, ...]:
             first, last_change = vintages[0], vintages[-1]
 
             # The month before the first release. The figure did not exist, and an agent that
-            # produces one has invented it.
-            questions.append(
-                Question(
-                    id=f"{series}:{observation}:before-release",
-                    series=series,
-                    observation=observation,
-                    as_of=_months_before(first, 1),
-                    expected="not_published",
-                    reason="the month before this period was first published",
+            # produces one has invented it. Asked only where this extract watched the period
+            # arrive: for one the ONS had already published when the capture began there is no
+            # such month, and naming one would be a false statement about a public calendar.
+            if _watched_arrive(connection, series, observation):
+                questions.append(
+                    Question(
+                        id=f"{series}:{observation}:before-release",
+                        series=series,
+                        observation=observation,
+                        as_of=_months_before(first, 1),
+                        expected="not_published",
+                        reason="the month before this period was first published",
+                    )
                 )
-            )
-            # At first release. The answer is the first estimate, which later revisions moved.
+            # At the earliest row. The answer is the figure the revision history starts from,
+            # which later revisions moved. Worded that way rather than "the first estimate",
+            # because for a period older than the extract it is the first estimate ON FILE.
             questions.append(
                 Question(
                     id=f"{series}:{observation}:first-release",
@@ -187,7 +222,7 @@ def build(connection: sqlite3.Connection) -> tuple[Question, ...]:
                     observation=observation,
                     as_of=first,
                     expected="answer",
-                    reason="the first published estimate, before any revision",
+                    reason="the earliest figure on file, before any revision recorded here",
                 )
             )
             # The month before the last revision landed. This is the discriminating one: the

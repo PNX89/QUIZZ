@@ -29,7 +29,7 @@ lets a run through.
 WHAT THE NULL IS, SAID PLAINLY. An agent that calls the right tool with the right series and
 period, and picks its knowing-time uniformly at random from the ones this corpus declares. That
 is precisely an agent with no sense of WHEN it is being asked about, which is the ability the
-whole repository is built to measure. It scores 14.41 of 56 in expectation, not zero, because
+whole repository is built to measure. It scores 16.36 of 52 in expectation, not zero, because
 some questions come out the same at every knowing-time.
 
 THE GATE CANNOT PASS ITS OWN NULL, BY CONSTRUCTION AND BY TEST. The threshold is the smallest

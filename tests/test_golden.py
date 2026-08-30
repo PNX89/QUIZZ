@@ -48,6 +48,47 @@ def test_every_refusal_question_names_the_rule_it_exercises(db: sqlite3.Connecti
     assert len(reasons) >= 5
 
 
+def test_no_not_published_question_asks_about_a_period_already_on_the_shelf(
+    db: sqlite3.Connection,
+) -> None:
+    """A not-published answer is a claim about a public release calendar, so it has to be true.
+
+    The eligibility filter compared every series against the corpus-wide earliest vintage, and
+    the four series were captured on four different days. The whole back-history of the two
+    monthly ones passed it, and the set asked whether the February 1988 CPI index and the
+    December 2011 unemployment rate had been published by September 2015. Both had, by decades
+    and by years; the oracle said otherwise only because the extract holds nothing earlier, and
+    an agent answering correctly was scored wrong four times over.
+    """
+    for question in golden.build(db):
+        if question.expected != "not_published":
+            continue
+        row = db.execute(
+            "select min(vintage) as first, "
+            "(select min(vintage) from observations where series = :series) as opens "
+            "from observations where series = :series and observation = :observation",
+            {"series": question.series, "observation": question.observation},
+        ).fetchone()
+        assert row["first"] > row["opens"], (
+            f"{question.id} asks whether {question.observation} had been published by "
+            f"{question.as_of}, but its earliest row IS the day this series was captured "
+            f"({row['opens']}), so the answer is about the extract and not about the ONS"
+        )
+
+
+def test_the_extract_watched_some_periods_arrive_and_not_others(db: sqlite3.Connection) -> None:
+    """The predicate above, checked on both sides so it cannot pass by refusing everything.
+
+    D7BT opens on 2015-10-12 and its February 1988 row carries that same day: the index was
+    published in 1988 and this extract simply starts later. IHYQ 2020 Q2 first appears on
+    2020-08-11, years into the window, so its absence before then is a fact about the calendar.
+    """
+    assert not golden._watched_arrive(db, "D7BT", "1988-02")
+    assert not golden._watched_arrive(db, "MGSX", "2011-12")
+    assert golden._watched_arrive(db, "IHYQ", "2020-Q2")
+    assert golden._watched_arrive(db, "MGSX", "2019-04")
+
+
 def test_no_answerable_question_is_inside_the_holdout(db: sqlite3.Connection) -> None:
     for question in golden.build(db):
         if question.expected != "refused":

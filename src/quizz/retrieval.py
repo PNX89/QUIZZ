@@ -20,7 +20,7 @@ including one with no WHERE clause at all. Neither alone is enough:
   * Row level security stops rows being RETURNED. It does not stop them being READ. Measured on
     this corpus, at a knowing-time whose partial index covered publication but not the holdout,
     a query shaped like the documents it was not allowed to see still showed `Rows Removed by
-    Filter: 3`. The policy did its job and three forbidden documents were read to do it.
+    Filter: 1`. The policy did its job, and a forbidden document was read in order to do it.
 
 THE PARTIAL INDEX CARRIES BOTH PREDICATES FOR THAT REASON. An index keyed only on publication
 still admits held out periods once the knowing-time is late enough to have published them.
@@ -179,14 +179,17 @@ def bootstrap(
         )
     # The barrier schema itself, which this repository owns and QUALMZ adopts. It lives beside
     # the documents so the boundary and the rows it governs are in one place and one backup.
-    for statement in barrier.install(None):
+    #
+    # The role is named HERE so the grant comes from `barrier.GRANT_SQL` rather than from a
+    # second copy written out beside it. It was a second copy until this line: the constant was
+    # formatted nowhere, so widening it to every table in the schema changed nothing that ran,
+    # and the test guarding it was guarding a string no deployment read. The retrieval role gets
+    # select on the documents and NOTHING on the two tables above, because a role that can read
+    # the holdout definition can compute the boundary exactly, and a barrier a caller can
+    # measure is one it can work around. The rules are public in `quizz/barrier.py`; the role's
+    # own queries cannot reach them, and those are different things.
+    for statement in barrier.install(None, role=ROLE):
         cursor.execute(statement)
-    # The role-scoped grant, and this is the whole of it. The retrieval role gets select on the
-    # documents and NOTHING on the two tables above. A role that can read the holdout definition
-    # can compute the boundary exactly, and a barrier a caller can measure is one it can work
-    # around. The rules are public in `quizz/barrier.py`; the role's own queries cannot reach
-    # them, and those are different things.
-    cursor.execute(f"grant select on notes to {ROLE}")
     cursor.execute(POLICY)
     cursor.execute("analyze notes")
 

@@ -12,19 +12,25 @@ contract in DOCDRIFT.md names, implemented for this repository:
 
 from __future__ import annotations
 
+import csv
 import json
 import pathlib
 import re
 import sqlite3
 from importlib import resources
 
-from quizz import golden
+from quizz import golden, scoring
 from quizz.cassette import Cassettes
 from quizz.notes import build as build_notes
+from tests import baselines
 
 REPO = pathlib.Path(__file__).resolve().parent.parent
 README = (REPO / "README.md").read_text("utf-8")
 EVIDENCE = REPO / "docs" / "evidence"
+
+#: The page spells this count out, so a test of it has to as well. A count outside this range
+#: raises here, which is the right failure: the sentence needs rewriting at that point anyway.
+IN_WORDS = {6: "six", 7: "seven", 8: "eight", 9: "nine", 10: "ten", 11: "eleven"}
 
 
 def test_the_readme_states_numbers_that_are_true_today(db: sqlite3.Connection) -> None:
@@ -48,6 +54,12 @@ def test_the_readme_states_numbers_that_are_true_today(db: sqlite3.Connection) -
         "four series",
     ):
         assert claim in README, f"the README no longer says {claim!r}"
+
+    # And says it nowhere else with a different number. The loop above is satisfied by a page
+    # carrying the right count in one paragraph and last year's in another, which is exactly the
+    # shape a partial edit leaves behind.
+    counted = set(re.findall(r"(\d+) questions", README))
+    assert counted == {str(len(questions))}, f"the page states more than one set size: {counted}"
 
 
 def test_the_readme_number_of_discriminating_questions_is_the_real_one(
@@ -73,6 +85,58 @@ def test_the_readme_number_of_discriminating_questions_is_the_real_one(
             discriminating += 1
     assert "**22 of the 36" in README
     assert discriminating == 22 and same == 14, (discriminating, same)
+
+
+def test_the_readme_restatement_count_counts_restatements_and_not_rows(
+    db: sqlite3.Connection,
+) -> None:
+    """NUMBER. The headline paragraph, which is the one an interviewer reads first.
+
+    The quarter has nine rows in the corpus, of which the first is a publication and the other
+    eight are restatements. The page said nine, which counted the rows, in the paragraph the
+    whole repository is an argument about.
+    """
+    rows = db.execute(
+        "select count(*) as n from observations where series = 'IHYQ' and observation = '2020-Q2'"
+    ).fetchone()["n"]
+    assert f"restated {IN_WORDS[rows - 1]}\ntimes in all" in README
+
+
+def test_the_readme_base_year_lag_is_the_one_the_extract_records(
+    db: sqlite3.Connection,
+) -> None:
+    """NUMBER, and the one where being wrong cost the argument rather than a digit.
+
+    The page said the CPI title went on reading 2005=100 until 2018-12-19, nearly three years
+    after the rebasing. The `basis` column of the file committed beside it is the publisher's
+    own title at each vintage, and it changes five versions later, at the release of
+    2016-06-14. So the metadata lagged the numbers by about four months, which is a weaker
+    example than the prose claimed and is the one the data supports.
+    """
+    raw = (resources.files("quizz.data") / "vintages" / "D7BT.csv").read_text(encoding="utf-8")
+    at_version: dict[int, tuple[str, str]] = {}
+    for row in csv.DictReader(raw.splitlines()):
+        at_version.setdefault(int(row["version"]), (row["vintage"], row["basis"]))
+    stale = [version for version, (_, basis) in at_version.items() if "2005=100" in basis]
+    assert stale, "no version in the extract carries the old base, so this checks nothing"
+    last_vintage, _ = at_version[max(stale)]
+    assert f'"2005=100" until the version released {last_vintage}' in README
+
+
+def test_the_readme_baseline_table_states_the_score_that_baseline_gets(
+    db: sqlite3.Connection,
+) -> None:
+    """NUMBER. The row of the scoring table a reader is likeliest to check by running it.
+
+    It read 0.333, and the paragraph beneath explained why the figure was exactly one in three.
+    The baseline scores fourteen of thirty six. Compared against the row that carries the
+    figure rather than searched for on the page, because a page this long contains any three
+    digits somewhere.
+    """
+    questions = golden.build(db)
+    result = scoring.score(db, questions, baselines.latest_value(db, questions))
+    row = f"| looks the number up | {result.answer_accuracy:.3f} | 0.000 | {result.leaked} |"
+    assert row in README, f"the scoring table no longer carries the row {row!r}"
 
 
 def test_the_readme_november_count_is_the_corpus_count(db: sqlite3.Connection) -> None:
@@ -209,7 +273,9 @@ def test_the_evidence_facts_agree_with_the_readme_badges() -> None:
     assert high.replace(".", "%2E") in README or high in README
 
 
-def test_every_gate_figure_on_the_page_is_the_one_the_demo_printed() -> None:
+def test_every_gate_figure_on_the_page_is_the_one_the_demo_printed(
+    db: sqlite3.Connection,
+) -> None:
     """The page said 23, 21 and 14.4. Its own committed demo said 25, 24 and 16.4.
 
     THIS IS THE DEFECT THE WHOLE REPOSITORY IS ABOUT, in the repository. QUIZZ exists to answer a
@@ -242,11 +308,19 @@ def test_every_gate_figure_on_the_page_is_the_one_the_demo_printed() -> None:
     #
     # Comparing the figures in the corresponding sentences is the assertion that was actually
     # wanted: the page may say it however it likes, and it may not say a different number.
+    # The size of the set is read from the set, not typed into the pattern. It was typed, and a
+    # change to the selection rules would have left both halves of every pair matching nothing,
+    # which is a pass: the loop would have found no figures to disagree about.
+    size = len(golden.build(db))
     pairs = [
-        (r"pass mark is (\d+) of 56", r"pass mark is (\d+) of 56", "the trial-corrected pass mark"),
         (
-            r"random knowing-time scores (\d+\.\d+) of 56",
-            r"scores (\d+\.\d+) of 56",
+            rf"pass mark is (\d+) of {size}",
+            rf"pass mark is (\d+) of {size}",
+            "the trial-corrected pass mark",
+        ),
+        (
+            rf"random knowing-time scores (\d+\.\d+) of {size}",
+            rf"scores (\d+\.\d+) of {size}",
             "the random baseline",
         ),
     ]

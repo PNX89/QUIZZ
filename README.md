@@ -34,7 +34,7 @@ here is measured against, and it carries the argument about what a refusal is al
 
 The first three lines are the same question about the same quarter, and all three answers are
 correct. UK GDP growth for the second quarter of 2020, the first lockdown, was first published
-at **-20.4 per cent** in August of that year, restated to -19.8 in November, and restated nine
+at **-20.4 per cent** in August of that year, restated to -19.8 in November, and restated eight
 times in all: out to -21.0 and in to -19.0 before settling at -19.9.
 
 A tool that looks the number up gives the last answer to all three questions. It is wrong about
@@ -51,12 +51,12 @@ Four prompt variants were recorded against `claude-sonnet-5` on 25 August 2026 a
 
 | variant | answers | refusals | restraint | leaks | calls exactly right |
 |---|---|---|---|---|---|
-| 0 | 1.000 | 1.000 | 1.000 | 0 | 56 of 56 |
-| 1 | 1.000 | 1.000 | 1.000 | 0 | 56 of 56 |
-| 2 | 1.000 | 1.000 | 1.000 | 0 | 56 of 56 |
-| 3 | 1.000 | 1.000 | 1.000 | 0 | 56 of 56 |
+| 0 | 1.000 | 1.000 | 1.000 | 0 | 52 of 52 |
+| 1 | 1.000 | 1.000 | 1.000 | 0 | 52 of 52 |
+| 2 | 1.000 | 1.000 | 1.000 | 0 | 52 of 52 |
+| 3 | 1.000 | 1.000 | 1.000 | 0 | 52 of 52 |
 
-**Four variants were tried, so the pass mark is 25 of 56, not 24.** Try enough phrasings
+**Four variants were tried, so the pass mark is 25 of 52, not 23.** Try enough phrasings
 and keep the best, and the number you report is the maximum of several draws rather than one.
 The threshold rises with the number tried, and the arithmetic is in
 [`src/quizz/gate.py`](src/quizz/gate.py).
@@ -72,7 +72,7 @@ being measured is whether an agent passes the right knowing-time to a tool, and 
 questions this one does, every time.
 
 An agent that calls the same tool with a knowing-time picked at random from the declared ones
-scores 16.4 of 56, so the questions are not free. They are also not hard for anything that reads
+scores 16.4 of 52, so the questions are not free. They are also not hard for anything that reads
 the question properly, and that is worth saying plainly rather than presenting four rows of
 1.000 as though they were a discovery.
 
@@ -142,10 +142,10 @@ shaped like the documents it is not allowed to see:
 
 ```text
 Index Scan using notes_hnsw on notes
-  Rows Removed by Filter: 3
+  Rows Removed by Filter: 1
 ```
 
-Three forbidden documents were read in order to be discarded. Every row that came back was
+A forbidden document was read in order to be discarded. Every row that came back was
 admissible, which is why nothing about the result set reveals it.
 
 With both predicates in the index, the same role and the same query vector visit none of them.
@@ -170,12 +170,14 @@ test requires that it separates them:
 | agent | answers | refusals | leaks |
 |---|---|---|---|
 | the oracle | 1.000 | 1.000 | 0 |
-| looks the number up | 0.333 | 0.000 | 7 |
+| looks the number up | 0.389 | 0.000 | 7 |
 | refuses everything | 0.000 | 1.000 | 0 |
 
-The 0.333 is not tuned. Each observation is asked at its first release, one month before its
-last restatement, and today, and only the third of those forgives a tool with no concept of a
-knowing-time.
+The 0.389 is not tuned. Each observation is asked at its earliest row, one month before its last
+restatement, and today. Only the third of those forgives a tool with no concept of a knowing-time,
+and that is twelve of the thirty six; the other two are questions where the figure at the
+knowing-time happens to be the figure today, which is exactly the coincidence the set is built to
+keep rare.
 
 **A leak is counted on its own** rather than diluted into a percentage. It is a question whose
 only correct response was a refusal and which the agent answered with a figure, and it is the
@@ -188,7 +190,7 @@ this has.
 
 ### The question set is derived, and checked for measuring anything
 
-56 questions built from the corpus by stated rules rather than chosen by hand. A set can
+52 questions built from the corpus by stated rules rather than chosen by hand. A set can
 be entirely correct and measure nothing: fill it with questions whose answer at the knowing-time
 equals the figure published today, and a broken tool scores full marks. **22 of the 36
 answerable questions discriminate and 14 do not**, asserted as a proportion so
@@ -257,10 +259,11 @@ it. Measured over this extract, **2162 of ABMI's recorded changes land in a Nove
 which.** Comparing raw values reported that every shared point of the CPI index had changed. The
 series had been rebased from 2005=100 to 2015=100, a constant ratio to within half a per cent.
 The ONS made that change at the version released 2016-01-19 and went on printing the title
-"2005=100" until 2018-12-19, so for nearly three years the metadata named a base the numbers had
-stopped using. Rebasings are therefore computed from the ratios at capture time and recorded in
-`SOURCE.json`, never read from the title. The detector finds nine in the GDP level, almost all in
-November, and none at all in the two series that are rates and have no base to move.
+"2005=100" until the version released 2016-05-17, five versions and about four months later, so
+the metadata named a base the numbers had stopped using. Rebasings are therefore computed from
+the ratios at capture time and recorded in `SOURCE.json`, never read from the title. The
+detector finds nine in the GDP level, almost all in November, and none at all in the two series
+that are rates and have no base to move.
 
 ## Surviving being killed
 
@@ -313,7 +316,7 @@ the rules anyway, which is the point.
 on. The corpus is an extract, the services run in containers on one machine, and the agent has no
 write path to anything.
 
-**The question set is small and its questions are of one shape.** 56 questions about four
+**The question set is small and its questions are of one shape.** 52 questions about four
 series from one publisher, all asking what a figure read at a stated time. An agent could do well
 here and badly on a question phrased in a way this set never tries.
 
