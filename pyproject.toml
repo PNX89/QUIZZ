@@ -54,7 +54,7 @@ build-backend = "hatchling.build"
 capture = ["openpyxl>=3.1"]
 dev = [
     "pytest>=8",
-    "ruff>=0.6",
+    "ruff>=0.16.5",
     "mypy>=1.11",
     "pyyaml>=6",
     "types-PyYAML>=6",
