@@ -33,7 +33,7 @@ dependencies = [
 # that a reader who wants to run the demonstration and the tests never installs it and never
 # needs a key. Recording cassettes is a deliberate, paid, one-time act.
 [project.optional-dependencies]
-live = ["anthropic>=1.0,<2"]
+live = ["anthropic>=1.2.0,<2"]
 
 [project.urls]
 Homepage = "https://github.com/PNX89/QUIZZ"
